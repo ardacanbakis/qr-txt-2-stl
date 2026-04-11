@@ -1,7 +1,11 @@
+import type { BuildPlate } from './Preview3D';
+
 interface ViewToolbarProps {
   showGrid: boolean;
   darkMode: boolean;
   isFullscreen: boolean;
+  buildPlateIndex: number;
+  buildPlates: BuildPlate[];
   onViewChange: (view: string) => void;
   onHome: () => void;
   onFit: () => void;
@@ -10,12 +14,15 @@ interface ViewToolbarProps {
   onToggleGrid: () => void;
   onToggleDarkMode: () => void;
   onToggleFullscreen: () => void;
+  onBuildPlateChange: (index: number) => void;
 }
 
 export function ViewToolbar({
   showGrid,
   darkMode,
   isFullscreen,
+  buildPlateIndex,
+  buildPlates,
   onViewChange,
   onHome,
   onFit,
@@ -24,6 +31,7 @@ export function ViewToolbar({
   onToggleGrid,
   onToggleDarkMode,
   onToggleFullscreen,
+  onBuildPlateChange,
 }: ViewToolbarProps) {
   const btn = (active = false) =>
     `w-8 h-8 flex items-center justify-center rounded-md transition-colors cursor-pointer ${
@@ -55,7 +63,7 @@ export function ViewToolbar({
   ];
 
   return (
-    <div className="absolute top-[130px] left-3 flex flex-col gap-2 select-none">
+    <div className="absolute top-[130px] left-3 flex flex-col gap-2 select-none z-10">
       {/* View preset buttons */}
       <div className="grid grid-cols-2 gap-1">
         {views.map(([label, view]) => (
@@ -142,6 +150,31 @@ export function ViewToolbar({
             </svg>
           )}
         </button>
+      </div>
+
+      <div className={sep} />
+
+      {/* Build plate selector */}
+      <div className="flex flex-col gap-1 items-center">
+        <select
+          value={buildPlateIndex}
+          onChange={(e) => onBuildPlateChange(Number(e.target.value))}
+          className={`w-full text-[10px] px-1.5 py-1 rounded cursor-pointer ${
+            darkMode
+              ? 'bg-gray-800/90 text-gray-300 border border-gray-600/50'
+              : 'bg-white/90 text-gray-600 border border-gray-300'
+          }`}
+          title="Build Plate"
+        >
+          {buildPlates.map((plate, i) => (
+            <option key={plate.name} value={i}>
+              {plate.name}
+            </option>
+          ))}
+        </select>
+        <span className={`text-[9px] ${darkMode ? 'text-gray-500' : 'text-gray-400'}`}>
+          {buildPlates[buildPlateIndex].width}x{buildPlates[buildPlateIndex].height}mm
+        </span>
       </div>
     </div>
   );

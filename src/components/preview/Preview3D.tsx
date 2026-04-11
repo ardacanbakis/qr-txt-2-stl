@@ -6,6 +6,40 @@ import { GeneratedModel, type GeneratedModelRef } from './GeneratedModel';
 import { ViewToolbar } from './ViewToolbar';
 import type { ModelConfig } from '../../types/model';
 
+// --- Build plate presets ---
+
+export interface BuildPlate {
+  name: string;
+  width: number;
+  height: number;
+}
+
+export const BUILD_PLATES: BuildPlate[] = [
+  { name: 'Bambu Lab H2D', width: 350, height: 325 },
+  { name: 'Bambu Lab A1', width: 256, height: 256 },
+  { name: 'Bambu Lab A1 Mini', width: 180, height: 180 },
+  { name: 'Bambu Lab X1C', width: 256, height: 256 },
+  { name: 'Bambu Lab P1S', width: 256, height: 256 },
+];
+
+// --- Z-up spherical helpers ---
+
+function toZUpSpherical(v: THREE.Vector3) {
+  const r = v.length();
+  if (r < 0.0001) return { r: 0, phi: 0, theta: 0 };
+  const phi = Math.acos(THREE.MathUtils.clamp(v.z / r, -1, 1));
+  const theta = Math.atan2(v.y, v.x);
+  return { r, phi, theta };
+}
+
+function fromZUpSpherical(r: number, phi: number, theta: number): THREE.Vector3 {
+  return new THREE.Vector3(
+    r * Math.sin(phi) * Math.cos(theta),
+    r * Math.sin(phi) * Math.sin(theta),
+    r * Math.cos(phi),
+  );
+}
+
 // --- Camera command system ---
 
 interface CameraCommand {
@@ -17,18 +51,29 @@ function easeOutCubic(t: number): number {
   return 1 - Math.pow(1 - t, 3);
 }
 
-// Camera positions for Z-up orientation
-const VIEW_POSITIONS: Record<string, { pos: [number, number, number]; up: [number, number, number] }> = {
-  top:    { pos: [0, 0, 1],    up: [0, 1, 0] },
-  bottom: { pos: [0, 0, -1],   up: [0, -1, 0] },
-  front:  { pos: [0, -1, 0],   up: [0, 0, 1] },
-  back:   { pos: [0, 1, 0],    up: [0, 0, 1] },
-  left:   { pos: [-1, 0, 0],   up: [0, 0, 1] },
-  right:  { pos: [1, 0, 0],    up: [0, 0, 1] },
-  home:   { pos: [0.5, -0.5, 0.65], up: [0, 0, 1] },
+// View presets in Z-up spherical coordinates
+const VIEW_PRESETS: Record<string, { phi: number; theta: number; up: [number, number, number] }> = {
+  top:    { phi: 0.001,              theta: 0,             up: [0, 1, 0] },
+  bottom: { phi: Math.PI - 0.001,   theta: 0,             up: [0, -1, 0] },
+  front:  { phi: Math.PI / 2,       theta: -Math.PI / 2,  up: [0, 0, 1] },
+  back:   { phi: Math.PI / 2,       theta: Math.PI / 2,   up: [0, 0, 1] },
+  left:   { phi: Math.PI / 2,       theta: Math.PI,       up: [0, 0, 1] },
+  right:  { phi: Math.PI / 2,       theta: 0,             up: [0, 0, 1] },
+  home:   { phi: 0.83,              theta: -0.785,        up: [0, 0, 1] },
 };
 
 // --- Scene controller (lives inside Canvas) ---
+
+interface AnimState {
+  startPhi: number;
+  startTheta: number;
+  startRadius: number;
+  targetPhi: number;
+  targetTheta: number;
+  targetRadius: number;
+  targetUp: THREE.Vector3;
+  progress: number;
+}
 
 function SceneController({
   command,
@@ -39,77 +84,108 @@ function SceneController({
 }) {
   const { camera } = useThree();
   const controlsRef = useRef<any>(null);
-  const animRef = useRef<{
-    startPos: THREE.Vector3;
-    targetPos: THREE.Vector3;
-    startUp: THREE.Vector3;
-    targetUp: THREE.Vector3;
-    progress: number;
-  } | null>(null);
+  const animRef = useRef<AnimState | null>(null);
   const processedKey = useRef(-1);
 
   useEffect(() => {
     if (!command || command.key === processedKey.current) return;
     processedKey.current = command.key;
 
-    const currentDist = camera.position.length();
-    let targetPos: THREE.Vector3;
-    let targetUp: THREE.Vector3;
+    const current = toZUpSpherical(camera.position);
 
     if (command.type === 'zoomIn' || command.type === 'zoomOut') {
       const factor = command.type === 'zoomIn' ? 0.8 : 1.25;
-      const dir = camera.position.clone().normalize();
-      const newDist = THREE.MathUtils.clamp(currentDist * factor, 10, 500);
-      targetPos = dir.multiplyScalar(newDist);
-      targetUp = camera.up.clone();
-    } else if (command.type === 'fit') {
+      animRef.current = {
+        startPhi: current.phi,
+        startTheta: current.theta,
+        startRadius: current.r,
+        targetPhi: current.phi,
+        targetTheta: current.theta,
+        targetRadius: THREE.MathUtils.clamp(current.r * factor, 10, 500),
+        targetUp: camera.up.clone(),
+        progress: 0,
+      };
+      return;
+    }
+
+    if (command.type === 'fit') {
       if (!modelRef.current) return;
       const box = new THREE.Box3().setFromObject(modelRef.current);
       const size = box.getSize(new THREE.Vector3());
       const center = box.getCenter(new THREE.Vector3());
       const maxDim = Math.max(size.x, size.y, size.z);
       const fov = (camera as THREE.PerspectiveCamera).fov;
-      const fitDist = (maxDim / 2) / Math.tan(THREE.MathUtils.degToRad(fov / 2)) * 1.8;
-      targetPos = new THREE.Vector3(
-        center.x + fitDist * 0.5,
-        center.y - fitDist * 0.5,
-        center.z + fitDist * 0.65,
-      );
-      targetUp = new THREE.Vector3(0, 0, 1);
+      const fitDist = (maxDim / 2) / Math.tan(THREE.MathUtils.degToRad(fov / 2)) * 2;
+      const home = VIEW_PRESETS.home;
+
+      let dTheta = home.theta - current.theta;
+      if (dTheta > Math.PI) dTheta -= 2 * Math.PI;
+      if (dTheta < -Math.PI) dTheta += 2 * Math.PI;
+
       if (controlsRef.current) {
         controlsRef.current.target.copy(center);
       }
-    } else {
-      const view = VIEW_POSITIONS[command.type];
-      if (!view) return;
-      const distance = Math.max(currentDist, 80);
-      targetPos = new THREE.Vector3(...view.pos).multiplyScalar(distance);
-      targetUp = new THREE.Vector3(...view.up);
+
+      animRef.current = {
+        startPhi: current.phi,
+        startTheta: current.theta,
+        startRadius: current.r,
+        targetPhi: home.phi,
+        targetTheta: current.theta + dTheta,
+        targetRadius: fitDist,
+        targetUp: new THREE.Vector3(0, 0, 1),
+        progress: 0,
+      };
+      return;
     }
 
+    const preset = VIEW_PRESETS[command.type];
+    if (!preset) return;
+
+    const distance = Math.max(current.r, 80);
+
+    // Shortest theta path
+    let dTheta = preset.theta - current.theta;
+    if (dTheta > Math.PI) dTheta -= 2 * Math.PI;
+    if (dTheta < -Math.PI) dTheta += 2 * Math.PI;
+
     animRef.current = {
-      startPos: camera.position.clone(),
-      targetPos,
-      startUp: camera.up.clone(),
-      targetUp,
+      startPhi: current.phi,
+      startTheta: current.theta,
+      startRadius: current.r,
+      targetPhi: preset.phi,
+      targetTheta: current.theta + dTheta,
+      targetRadius: distance,
+      targetUp: new THREE.Vector3(...preset.up),
       progress: 0,
     };
   }, [command, camera, modelRef]);
 
   useFrame((_, delta) => {
     if (!animRef.current) return;
+    const anim = animRef.current;
 
-    animRef.current.progress = Math.min(animRef.current.progress + delta * 3.5, 1);
-    const t = easeOutCubic(animRef.current.progress);
+    anim.progress = Math.min(anim.progress + delta * 3.5, 1);
+    const t = easeOutCubic(anim.progress);
 
-    camera.position.lerpVectors(animRef.current.startPos, animRef.current.targetPos, t);
-    camera.up.lerpVectors(animRef.current.startUp, animRef.current.targetUp, t).normalize();
+    const phi = THREE.MathUtils.lerp(anim.startPhi, anim.targetPhi, t);
+    const theta = THREE.MathUtils.lerp(anim.startTheta, anim.targetTheta, t);
+    const radius = THREE.MathUtils.lerp(anim.startRadius, anim.targetRadius, t);
+
+    camera.position.copy(fromZUpSpherical(radius, phi, theta));
+
+    // Snap up vector in the last 20% of animation
+    if (t > 0.8) {
+      const upT = (t - 0.8) / 0.2;
+      camera.up.lerp(anim.targetUp, upT).normalize();
+    }
 
     if (controlsRef.current) {
       controlsRef.current.update();
     }
 
-    if (animRef.current.progress >= 1) {
+    if (anim.progress >= 1) {
+      camera.up.copy(anim.targetUp);
       animRef.current = null;
     }
   });
@@ -137,10 +213,13 @@ export const Preview3D = forwardRef<GeneratedModelRef, Preview3DProps>(({ config
   const [showGrid, setShowGrid] = useState(true);
   const [darkMode, setDarkMode] = useState(true);
   const [isFullscreen, setIsFullscreen] = useState(false);
+  const [buildPlateIndex, setBuildPlateIndex] = useState(0);
   const [cameraCommand, setCameraCommand] = useState<CameraCommand | null>(null);
   const commandKey = useRef(0);
   const containerRef = useRef<HTMLDivElement>(null);
   const modelGroupRef = useRef<THREE.Group>(null);
+
+  const buildPlate = BUILD_PLATES[buildPlateIndex];
 
   const sendCommand = useCallback((type: string) => {
     commandKey.current++;
@@ -166,12 +245,12 @@ export const Preview3D = forwardRef<GeneratedModelRef, Preview3DProps>(({ config
   return (
     <div
       ref={containerRef}
-      className="w-full h-full relative"
-      style={{ background: bgColor }}
+      className="w-full h-full relative overflow-hidden"
+      style={{ background: bgColor, ...(isFullscreen ? { width: '100vw', height: '100vh' } : {}) }}
     >
       <Canvas
         camera={{ position: [60, -60, 80], up: [0, 0, 1], fov: 45, near: 0.1, far: 1000 }}
-        style={{ background: bgColor }}
+        style={{ background: bgColor, width: '100%', height: '100%' }}
       >
         {/* Lighting */}
         <ambientLight intensity={0.5} />
@@ -187,19 +266,19 @@ export const Preview3D = forwardRef<GeneratedModelRef, Preview3DProps>(({ config
           <GeneratedModel ref={ref} config={config} />
         </group>
 
-        {/* Grid on XY plane (Z-up) */}
+        {/* Grid sized to build plate */}
         {showGrid && (
           <Grid
             rotation={[Math.PI / 2, 0, 0]}
             position={[0, 0, -config.base.thickness / 2 - 0.5]}
-            cellSize={5}
+            args={[buildPlate.width, buildPlate.height]}
+            cellSize={10}
             cellThickness={0.5}
             cellColor={darkMode ? '#4a4a6a' : '#a8d4f0'}
-            sectionSize={10}
+            sectionSize={50}
             sectionThickness={1}
             sectionColor={darkMode ? '#6a6a9a' : '#72b8e4'}
-            fadeDistance={150}
-            infiniteGrid
+            fadeDistance={500}
           />
         )}
 
@@ -229,6 +308,8 @@ export const Preview3D = forwardRef<GeneratedModelRef, Preview3DProps>(({ config
         showGrid={showGrid}
         darkMode={darkMode}
         isFullscreen={isFullscreen}
+        buildPlateIndex={buildPlateIndex}
+        buildPlates={BUILD_PLATES}
         onViewChange={(view) => sendCommand(view)}
         onHome={() => sendCommand('home')}
         onFit={() => sendCommand('fit')}
@@ -237,6 +318,7 @@ export const Preview3D = forwardRef<GeneratedModelRef, Preview3DProps>(({ config
         onToggleGrid={() => setShowGrid((v) => !v)}
         onToggleDarkMode={() => setDarkMode((v) => !v)}
         onToggleFullscreen={toggleFullscreen}
+        onBuildPlateChange={setBuildPlateIndex}
       />
 
       {/* Controls help - bottom left */}
@@ -252,6 +334,7 @@ export const Preview3D = forwardRef<GeneratedModelRef, Preview3DProps>(({ config
       }`}>
         <div>{config.base.width} x {config.base.height} x {config.base.thickness}mm</div>
         <div>Content: {config.content.contentHeight}mm ({config.content.mode})</div>
+        <div className="text-[10px] opacity-70">{buildPlate.name} ({buildPlate.width}x{buildPlate.height})</div>
       </div>
     </div>
   );
