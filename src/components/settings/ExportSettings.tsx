@@ -25,15 +25,15 @@ export function ExportSettings({ exportConfig, onChange, onExport }: ExportSetti
       />
 
       <Toggle
-        label="Multi-material (separate STLs)"
-        checked={exportConfig.multiMaterial}
-        onChange={v => onChange({ multiMaterial: v })}
+        label="Separate Parts (multi-color)"
+        checked={exportConfig.separateParts}
+        onChange={v => onChange({ separateParts: v })}
       />
 
-      {exportConfig.multiMaterial && (
+      {exportConfig.separateParts && (
         <p className="text-xs text-gray-500">
-          Downloads two STL files: base plate and content layer.
-          Load both in your slicer and assign different materials.
+          Downloads one STL per part (base, content, text, logo, etc.).
+          Load them all in your slicer and assign different filaments.
         </p>
       )}
 

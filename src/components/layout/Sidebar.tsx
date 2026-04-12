@@ -1,27 +1,88 @@
 import { SectionHeader } from '../shared/SectionHeader';
-import { InputSettings } from '../settings/InputSettings';
+import { GeneratorTabs } from '../settings/GeneratorTabs';
 import { BaseSettings } from '../settings/BaseSettings';
 import { ModelSettings } from '../settings/ModelSettings';
 import { ExportSettings } from '../settings/ExportSettings';
-import type { ModelConfig, BaseConfig, ContentConfig, MagnetHoleConfig, ExportConfig } from '../../types/model';
+import {
+  QRSettings,
+  TextSettings,
+  SpotifySettings,
+  WifiSettings,
+  VCardSettings,
+  ImageSettings,
+  LithophaneSettings,
+  BarcodeSettings,
+  NameplateSettings,
+} from '../settings/GeneratorSettings';
+import type {
+  ModelConfig,
+  BaseConfig,
+  ContentConfig,
+  MagnetHoleConfig,
+  ExportConfig,
+  GeneratorType,
+  TextConfig,
+  SpotifyConfig,
+  WifiCardConfig,
+  VCardConfig,
+  ImageConfig,
+  LithophaneConfig,
+  BarcodeConfig,
+  NameplateConfig,
+} from '../../types/model';
 
 interface SidebarProps {
   config: ModelConfig;
-  onBaseChange: (updates: Partial<BaseConfig>) => void;
-  onContentChange: (updates: Partial<ContentConfig>) => void;
-  onMagnetChange: (updates: Partial<MagnetHoleConfig>) => void;
-  onExportChange: (updates: Partial<ExportConfig>) => void;
+  onGeneratorChange: (g: GeneratorType) => void;
+  onBaseChange: (u: Partial<BaseConfig>) => void;
+  onContentChange: (u: Partial<ContentConfig>) => void;
+  onTextChange: (u: Partial<TextConfig>) => void;
+  onSpotifyChange: (u: Partial<SpotifyConfig>) => void;
+  onWifiChange: (u: Partial<WifiCardConfig>) => void;
+  onVCardChange: (u: Partial<VCardConfig>) => void;
+  onImageChange: (u: Partial<ImageConfig>) => void;
+  onLithophaneChange: (u: Partial<LithophaneConfig>) => void;
+  onBarcodeChange: (u: Partial<BarcodeConfig>) => void;
+  onNameplateChange: (u: Partial<NameplateConfig>) => void;
+  onMagnetChange: (u: Partial<MagnetHoleConfig>) => void;
+  onExportChange: (u: Partial<ExportConfig>) => void;
   onExport: () => void;
 }
 
-export function Sidebar({
-  config,
-  onBaseChange,
-  onContentChange,
-  onMagnetChange,
-  onExportChange,
-  onExport,
-}: SidebarProps) {
+const GENERATOR_LABELS: Record<GeneratorType, string> = {
+  qr: 'QR Code',
+  text: 'Text',
+  spotify: 'Spotify Code',
+  wifi: 'WiFi Card',
+  vcard: 'Contact Card',
+  image: 'Image',
+  lithophane: 'Lithophane',
+  barcode: 'Barcode',
+  nameplate: 'Nameplate',
+};
+
+export function Sidebar(props: SidebarProps) {
+  const {
+    config,
+    onGeneratorChange,
+    onBaseChange,
+    onContentChange,
+    onTextChange,
+    onSpotifyChange,
+    onWifiChange,
+    onVCardChange,
+    onImageChange,
+    onLithophaneChange,
+    onBarcodeChange,
+    onNameplateChange,
+    onMagnetChange,
+    onExportChange,
+    onExport,
+  } = props;
+
+  const showBase = config.generator !== 'lithophane';
+  const showModel = config.generator !== 'lithophane' && config.generator !== 'image';
+
   return (
     <aside className="w-[380px] min-w-[380px] h-full bg-gray-800 border-r border-gray-700 flex flex-col overflow-hidden">
       {/* Header */}
@@ -30,24 +91,41 @@ export function Sidebar({
         <p className="text-xs text-gray-400 mt-0.5">Generate 3D-printable STL files</p>
       </div>
 
+      {/* Generator tabs */}
+      <div className="border-b border-gray-700 bg-gray-850">
+        <GeneratorTabs value={config.generator} onChange={onGeneratorChange} />
+      </div>
+
       {/* Scrollable settings */}
       <div className="flex-1 overflow-y-auto">
-        <SectionHeader title="Input" defaultOpen>
-          <InputSettings content={config.content} onChange={onContentChange} />
+        <SectionHeader title={GENERATOR_LABELS[config.generator]} defaultOpen>
+          {config.generator === 'qr' && <QRSettings content={config.content} onChange={onContentChange} />}
+          {config.generator === 'text' && <TextSettings config={config.text} onChange={onTextChange} />}
+          {config.generator === 'spotify' && <SpotifySettings config={config.spotify} onChange={onSpotifyChange} />}
+          {config.generator === 'wifi' && <WifiSettings config={config.wifi} onChange={onWifiChange} />}
+          {config.generator === 'vcard' && <VCardSettings config={config.vcard} onChange={onVCardChange} />}
+          {config.generator === 'image' && <ImageSettings config={config.image} onChange={onImageChange} />}
+          {config.generator === 'lithophane' && <LithophaneSettings config={config.lithophane} onChange={onLithophaneChange} />}
+          {config.generator === 'barcode' && <BarcodeSettings config={config.barcode} onChange={onBarcodeChange} />}
+          {config.generator === 'nameplate' && <NameplateSettings config={config.nameplate} onChange={onNameplateChange} />}
         </SectionHeader>
 
-        <SectionHeader title="Base Plate" defaultOpen>
-          <BaseSettings base={config.base} onChange={onBaseChange} />
-        </SectionHeader>
+        {showBase && (
+          <SectionHeader title="Base Plate" defaultOpen>
+            <BaseSettings base={config.base} onChange={onBaseChange} />
+          </SectionHeader>
+        )}
 
-        <SectionHeader title="Model" defaultOpen>
-          <ModelSettings
-            content={config.content}
-            magnets={config.magnets}
-            onContentChange={onContentChange}
-            onMagnetChange={onMagnetChange}
-          />
-        </SectionHeader>
+        {showModel && (
+          <SectionHeader title="Model" defaultOpen>
+            <ModelSettings
+              content={config.content}
+              magnets={config.magnets}
+              onContentChange={onContentChange}
+              onMagnetChange={onMagnetChange}
+            />
+          </SectionHeader>
+        )}
 
         <SectionHeader title="Export" defaultOpen>
           <ExportSettings

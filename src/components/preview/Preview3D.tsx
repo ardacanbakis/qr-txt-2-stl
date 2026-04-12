@@ -1,26 +1,12 @@
-import { useState, useRef, useEffect, useCallback, forwardRef } from 'react';
+import { useState, useRef, useEffect, useCallback, forwardRef, Suspense } from 'react';
 import { Canvas, useThree, useFrame } from '@react-three/fiber';
 import { OrbitControls, Grid, Environment, GizmoHelper, GizmoViewcube, GizmoViewport } from '@react-three/drei';
+import type { OrbitControls as OrbitControlsImpl } from 'three-stdlib';
 import * as THREE from 'three';
 import { GeneratedModel, type GeneratedModelRef } from './GeneratedModel';
 import { ViewToolbar } from './ViewToolbar';
+import { BUILD_PLATES } from './buildPlates';
 import type { ModelConfig } from '../../types/model';
-
-// --- Build plate presets ---
-
-export interface BuildPlate {
-  name: string;
-  width: number;
-  height: number;
-}
-
-export const BUILD_PLATES: BuildPlate[] = [
-  { name: 'Bambu Lab H2D', width: 350, height: 325 },
-  { name: 'Bambu Lab A1', width: 256, height: 256 },
-  { name: 'Bambu Lab A1 Mini', width: 180, height: 180 },
-  { name: 'Bambu Lab X1C', width: 256, height: 256 },
-  { name: 'Bambu Lab P1S', width: 256, height: 256 },
-];
 
 // --- Z-up spherical helpers ---
 
@@ -83,7 +69,7 @@ function SceneController({
   modelRef: React.RefObject<THREE.Group | null>;
 }) {
   const { camera } = useThree();
-  const controlsRef = useRef<any>(null);
+  const controlsRef = useRef<OrbitControlsImpl | null>(null);
   const animRef = useRef<AnimState | null>(null);
   const processedKey = useRef(-1);
 
@@ -263,7 +249,9 @@ export const Preview3D = forwardRef<GeneratedModelRef, Preview3DProps>(({ config
 
         {/* Model */}
         <group ref={modelGroupRef}>
-          <GeneratedModel ref={ref} config={config} />
+          <Suspense fallback={null}>
+            <GeneratedModel ref={ref} config={config} />
+          </Suspense>
         </group>
 
         {/* Grid sized to build plate */}

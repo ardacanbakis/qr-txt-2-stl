@@ -1,4 +1,4 @@
-import type { BuildPlate } from './Preview3D';
+import type { BuildPlate } from './buildPlates';
 
 interface ViewToolbarProps {
   showGrid: boolean;
