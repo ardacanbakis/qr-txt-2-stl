@@ -35,8 +35,8 @@
 
 ### Feature-Specific Libraries
 - `qrcode-generator` - QR code matrix generation
-- `opentype.js` - Text-to-3D path conversion (for embossed/engraved text)
-- `firebase` - Auth + Hosting + Firestore (project saves)
+- `three-stdlib` - TextGeometry + FontLoader (used via drei's `useFont`) + OrbitControls + STLExporter
+- `firebase` - Auth + Hosting + Firestore (project saves) — planned
 
 ### Dev Dependencies
 - `@types/three` - Three.js types
@@ -51,68 +51,68 @@
 qr-txt-2-stl/
 ├── CLAUDE.md                    # This file - project reference
 ├── public/
+│   └── fonts/                   # helvetiker_regular + _bold typeface JSON
 ├── src/
 │   ├── main.tsx                 # Entry point
-│   ├── App.tsx                  # Root component + routing
+│   ├── App.tsx                  # Root component, wires hooks ↔ sidebar ↔ preview, handles export
 │   ├── components/
 │   │   ├── layout/
-│   │   │   ├── AppShell.tsx     # Main layout (sidebar + preview)
-│   │   │   ├── Sidebar.tsx      # Left settings panel
-│   │   │   └── Header.tsx       # Top bar with logo, auth, export
+│   │   │   └── Sidebar.tsx           # Left settings panel (dispatcher by generator type)
 │   │   ├── settings/
-│   │   │   ├── InputSettings.tsx    # Input type selector + fields
-│   │   │   ├── QRSettings.tsx       # QR-specific options
-│   │   │   ├── TextSettings.tsx     # Text/label specific options
-│   │   │   ├── SpotifySettings.tsx  # Spotify code options
-│   │   │   ├── BaseSettings.tsx     # Base plate shape/size/thickness
-│   │   │   ├── ModelSettings.tsx    # Height, magnet holes, mounting
-│   │   │   └── ExportSettings.tsx   # STL export options, multi-material toggle
+│   │   │   ├── GeneratorTabs.tsx     # 9-tab generator type selector
+│   │   │   ├── GeneratorSettings.tsx # All per-generator settings panels
+│   │   │   ├── BaseSettings.tsx      # Base plate shape/size/thickness
+│   │   │   ├── ModelSettings.tsx     # Content height, magnet holes, mounting
+│   │   │   └── ExportSettings.tsx    # STL export options, separateParts toggle
 │   │   ├── preview/
-│   │   │   ├── Preview3D.tsx        # R3F Canvas wrapper
-│   │   │   ├── ModelViewer.tsx      # Camera, lights, controls
-│   │   │   └── GeneratedModel.tsx   # The actual 3D model mesh
+│   │   │   ├── Preview3D.tsx         # R3F Canvas wrapper, camera controller, view presets
+│   │   │   ├── ViewToolbar.tsx       # Floating 3D toolbar (views, zoom, grid, theme, fullscreen, plate)
+│   │   │   ├── buildPlates.ts        # BuildPlate type + BUILD_PLATES presets (H2D, A1, X1C...)
+│   │   │   └── GeneratedModel.tsx    # Dispatcher: routes config.generator → sub-components
 │   │   └── shared/
 │   │       ├── Slider.tsx
 │   │       ├── Select.tsx
 │   │       ├── Toggle.tsx
-│   │       └── NumberInput.tsx
+│   │       ├── NumberInput.tsx
+│   │       └── SectionHeader.tsx
 │   ├── generators/
-│   │   ├── qr-generator.ts         # QR code matrix → 3D geometry
-│   │   ├── text-generator.ts       # Text → 3D geometry (opentype.js)
-│   │   ├── spotify-generator.ts    # Spotify code → 3D geometry
-│   │   ├── base-generator.ts       # Base plate geometry (rect, round, keychain)
-│   │   ├── magnet-holes.ts         # Magnet hole geometry (CSG subtract)
-│   │   └── stl-exporter.ts         # Three.js → STL file export (single + multi-material)
+│   │   ├── qr-generator.ts          # QR code matrix → 3D geometry
+│   │   ├── text-generator.ts        # Text → 3D geometry (three-stdlib TextGeometry + italic shear)
+│   │   ├── spotify-generator.ts     # Spotify-style bar pattern from URL hash
+│   │   ├── barcode-generator.ts     # CODE 39 barcode → 3D bars
+│   │   ├── image-generator.ts       # Image → grayscale grid → silhouette with row-run merging
+│   │   ├── lithophane-generator.ts  # Heightmap lithophane (closed volume with walls)
+│   │   ├── base-generator.ts        # Base plate geometry (rect, round, keychain)
+│   │   └── stl-exporter.ts          # exportSTL + exportSeparateParts (by userData.part tags)
 │   ├── hooks/
-│   │   ├── useModelConfig.ts       # Central state for all model parameters
-│   │   ├── useSTLExport.ts         # Export logic hook
-│   │   └── useFirebaseAuth.ts      # Optional auth hook
-│   ├── types/
-│   │   └── model.ts                # TypeScript interfaces for model config
-│   ├── utils/
-│   │   ├── geometry.ts             # Shared geometry helpers
-│   │   └── spotify-api.ts          # Spotify code parsing
-│   └── firebase/
-│       ├── config.ts               # Firebase initialization
-│       └── projects.ts             # Save/load projects to Firestore
+│   │   └── useModelConfig.ts        # Central state for all model parameters + per-generator updaters
+│   └── types/
+│       └── model.ts                 # TypeScript interfaces for model config + DEFAULT_CONFIG
 ├── index.html
 ├── tailwind.config.js
 ├── tsconfig.json
 ├── vite.config.ts
-├── package.json
-└── firebase.json
+└── package.json
 ```
+
+Generators not yet migrated to their own file (still inline in `GeneratedModel.tsx`
+sub-components): WiFi, vCard, Nameplate — these reuse the QR and Text generators.
 
 ---
 
 ## Feature Specifications
 
-### Input Types
-1. **Plain Text / URL** → Encoded as QR code on a 3D plate
-2. **WiFi Credentials** → SSID, password, encryption type → QR code
-3. **Spotify Link** → Parsed into Spotify scan code visual
-4. **vCard** → Contact info fields → QR code
-5. **Custom Text Label** → Embossed or engraved 3D text plate
+### Generator Types (9 total, selected via tabs in sidebar)
+1. **QR Code** → Plain text / URL encoded as QR matrix → extruded modules on plate
+2. **Text Label** → Custom embossed/engraved 3D text (regular / bold / italic / bold-italic)
+3. **Spotify** → Spotify URL → deterministic scan-style bar pattern + circular logo
+4. **WiFi** → SSID + password + encryption → WiFi-URI QR code (optional label)
+5. **vCard** → Contact fields → vCard-string QR code (optional name label)
+6. **Barcode** → CODE 39 (CODE 128 / EAN-13 fall back to CODE 39) with optional text caption
+7. **Image Silhouette** → Upload image → threshold → extruded pixel silhouette
+8. **Lithophane** → Upload photo → grayscale heightmap closed-volume print
+9. **Nameplate** → Primary + secondary text on a plate, styled font
+*(Calendar generator deferred — not yet implemented.)*
 
 ### Base Plate Options
 - **Shapes**: Rectangle, Rounded Rectangle, Circle, Custom (keychain w/ hole)
@@ -130,70 +130,75 @@ qr-txt-2-stl/
 
 ### Export Options
 - **Single STL**: Combined model, one file
-- **Multi-material STL**: Separate files for base and content (dual-extrusion)
+- **Separate parts**: Downloads one STL per tagged part (`base`, `border`, `content`, `text`, `secondary`, `logo`) — ideal for multi-color / dual-extrusion prints. Meshes are tagged via `userData.part` and grouped by the exporter.
 - **Units**: Millimeters (always)
 - **Quality**: Low/Medium/High polygon count
 
 ### 3D Preview
-- Interactive orbit controls (rotate, pan, zoom)
-- Grid floor + axis helpers
-- Real-time updates as settings change
-- Material colors for visualization (not affecting print)
-- Dimension annotations (optional)
+- Z-up CAD-style camera with orbit / pan / zoom
+- Animated view presets (Top / Bottom / Front / Back / Left / Right / Home / Fit)
+- ViewCube + axis gizmo, dark/light toggle, fullscreen, grid toggle
+- Build plate presets (Bambu H2D, A1, A1 Mini, X1C, P1S) as a sized grid floor
+- Real-time updates via React state + `useMemo`-cached geometries
+- Async font loading via drei's `useFont` wrapped in `<Suspense>` inside the Canvas
 
 ---
 
 ## Phased Development Checklist
 
 ### Phase 1: Foundation & Core Setup
-- [ ] Initialize Vite + React + TypeScript project
-- [ ] Install and configure Tailwind CSS
-- [ ] Install Three.js + React Three Fiber + Drei
-- [ ] Create basic AppShell layout (sidebar + preview area)
-- [ ] Set up basic 3D canvas with orbit controls, grid, and lighting
-- [ ] Create shared UI components (Slider, Select, Toggle, NumberInput)
-- [ ] Define TypeScript types/interfaces for model configuration
+- [x] Initialize Vite + React + TypeScript project
+- [x] Install and configure Tailwind CSS
+- [x] Install Three.js + React Three Fiber + Drei
+- [x] Create basic AppShell layout (sidebar + preview area)
+- [x] Set up basic 3D canvas with orbit controls, grid, and lighting
+- [x] Create shared UI components (Slider, Select, Toggle, NumberInput)
+- [x] Define TypeScript types/interfaces for model configuration
 
 ### Phase 2: QR Code Generation (Core MVP)
-- [ ] Integrate qrcode-generator library
-- [ ] Build QR matrix → Three.js BoxGeometry converter
-- [ ] Create rectangular base plate geometry
-- [ ] Render QR code on base plate in 3D preview
-- [ ] Implement text/URL input field with live QR preview
-- [ ] Add error correction level selector (L, M, Q, H)
-- [ ] Implement STL export (single file) using STLExporter
-- [ ] Add download button with file naming
+- [x] Integrate qrcode-generator library
+- [x] Build QR matrix → Three.js BoxGeometry converter
+- [x] Create rectangular base plate geometry
+- [x] Render QR code on base plate in 3D preview
+- [x] Implement text/URL input field with live QR preview
+- [x] Add error correction level selector (L, M, Q, H)
+- [x] Implement STL export (single file) using STLExporter
+- [x] Add download button with file naming
 
 ### Phase 3: Base Plate & Customization
-- [ ] Add base plate shape options (rectangle, rounded rect, circle)
-- [ ] Implement keychain hole option with diameter control
-- [ ] Add dimension controls (width, height, thickness in mm)
-- [ ] Add QR/content height (protrusion) control
-- [ ] Add border width control
-- [ ] Implement embossed vs engraved toggle
+- [x] Add base plate shape options (rectangle, rounded rect, circle)
+- [x] Implement keychain hole option with diameter control
+- [x] Add dimension controls (width, height, thickness in mm)
+- [x] Add QR/content height (protrusion) control
+- [x] Add border width control
+- [x] Implement embossed vs engraved toggle
 - [ ] Add edge treatment (fillet/chamfer) on base plate
 
 ### Phase 4: Additional Input Types
-- [ ] WiFi credential input (SSID, password, encryption type)
-- [ ] vCard input (name, phone, email, address fields)
-- [ ] Spotify link parsing → Spotify scan code geometry
-- [ ] Input type selector tabs/dropdown in sidebar
+- [x] WiFi credential input (SSID, password, encryption type)
+- [x] vCard input (name, phone, email, address fields)
+- [x] Spotify link parsing → Spotify scan code geometry
+- [x] Input type selector tabs/dropdown in sidebar (9-tab GeneratorTabs)
+- [x] Barcode (CODE 39) generator
+- [x] Image silhouette generator
+- [x] Lithophane generator
+- [x] Nameplate generator
 
 ### Phase 5: Text Labels & Plates
-- [ ] Integrate opentype.js for font loading
-- [ ] Text → 3D extruded geometry pipeline
-- [ ] Font selector (bundle 3-5 popular fonts)
-- [ ] Text size, spacing, and alignment controls
+- [x] Font loading via drei's useFont (three-stdlib TextGeometry)
+- [x] Text → 3D extruded geometry pipeline
+- [x] Font style selector (regular / bold / italic / bold-italic via shear matrix)
+- [x] Text size, letter spacing, and centering
 - [ ] Combined QR + text on same plate option
 
 ### Phase 6: Advanced Model Features
-- [ ] Magnet hole geometry (CSG boolean subtract)
-- [ ] Magnet hole presets (6x3mm, 8x3mm, 10x3mm)
-- [ ] Magnet hole position options (corners, edges, center, custom)
+- [x] Magnet hole geometry (CSG boolean subtract)
+- [x] Magnet hole presets (6x3mm, 8x3mm, 10x3mm)
+- [x] Magnet hole position options (corners / edges / center)
 - [ ] Screw hole option
 - [ ] Wall mount bracket geometry
 - [ ] Fridge magnet recess option
-- [ ] Multi-material STL export (separate base + content files)
+- [x] Separate-parts STL export (by `userData.part` tags)
 
 ### Phase 7: Firebase Integration
 - [ ] Set up Firebase project + config
