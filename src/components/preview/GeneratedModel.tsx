@@ -4,7 +4,7 @@ import { useFont } from '@react-three/drei';
 import { generateQRMatrix, createQRGeometry, generateWifiString, generateVCardString } from '../../generators/qr-generator';
 import { createBasePlateGeometry } from '../../generators/base-generator';
 import { buildTextGeometry, isItalic } from '../../generators/text-generator';
-import { createSpotifyGeometry } from '../../generators/spotify-generator';
+import { createSpotifyGeometryFromSvg, fetchSpotifySvg, parseSpotifyUri } from '../../generators/spotify-generator';
 import { encodeBarcode, createBarcodeGeometry } from '../../generators/barcode-generator';
 import { loadImagePixels, createImageSilhouetteGeometry, type PixelGrid } from '../../generators/image-generator';
 import { createLithophaneGeometry } from '../../generators/lithophane-generator';
@@ -23,7 +23,6 @@ interface GeneratedModelProps {
 const CONTENT_COLOR = '#1a1a2e';
 const BASE_COLOR = '#e6e6ea';
 const TEXT_COLOR = '#0f172a';
-const ACCENT_COLOR = '#1db954';
 
 function contentZ(base: ModelConfig['base'], content: ModelConfig['content'], embossed: boolean): number {
   return embossed
@@ -232,39 +231,74 @@ function TextGeneratorGroup({ config }: { config: ModelConfig }) {
 
 // --- Spotify Generator ---
 
+function useSpotifySvg(url: string): { svgText: string | null; error: string | null } {
+  const [svgText, setSvgText] = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    const uri = parseSpotifyUri(url);
+    if (!uri) {
+      Promise.resolve().then(() => {
+        setSvgText(null);
+        setError('Invalid Spotify URL or URI');
+      });
+      return;
+    }
+
+    let cancelled = false;
+    fetchSpotifySvg(uri)
+      .then((text) => {
+        if (!cancelled) {
+          setSvgText(text);
+          setError(null);
+        }
+      })
+      .catch((e: Error) => {
+        if (!cancelled) {
+          setSvgText(null);
+          setError(e.message || 'Failed to fetch Spotify scannable');
+        }
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [url]);
+
+  return { svgText, error };
+}
+
 function SpotifyGeneratorGroup({ config }: { config: ModelConfig }) {
   const embossed = config.content.mode === 'embossed';
-  const result = useMemo(
-    () =>
-      createSpotifyGeometry(
-        config.spotify.url,
+  const { svgText } = useSpotifySvg(config.spotify.url);
+
+  const geometry = useMemo(() => {
+    if (!svgText) return new THREE.BufferGeometry();
+    try {
+      return createSpotifyGeometryFromSvg(
+        svgText,
         config.base.width,
         config.base.height,
         config.base.borderWidth,
         config.content.contentHeight,
-        embossed,
-      ),
-    [
-      config.spotify.url,
-      config.base.width,
-      config.base.height,
-      config.base.borderWidth,
-      config.content.contentHeight,
-      embossed,
-    ],
-  );
+        config.spotify.showLogo,
+      );
+    } catch {
+      return new THREE.BufferGeometry();
+    }
+  }, [
+    svgText,
+    config.base.width,
+    config.base.height,
+    config.base.borderWidth,
+    config.content.contentHeight,
+    config.spotify.showLogo,
+  ]);
 
   return (
-    <>
-      <mesh position={[0, 0, contentZ(config.base, config.content, embossed)]} userData={{ part: 'content' }}>
-        <primitive object={result.geometry} attach="geometry" />
-        <meshStandardMaterial color={CONTENT_COLOR} roughness={0.3} metalness={0.2} />
-      </mesh>
-      <mesh position={[0, 0, contentZ(config.base, config.content, embossed)]} userData={{ part: 'logo' }}>
-        <primitive object={result.logoGeometry} attach="geometry" />
-        <meshStandardMaterial color={ACCENT_COLOR} roughness={0.3} metalness={0.2} />
-      </mesh>
-    </>
+    <mesh position={[0, 0, contentZ(config.base, config.content, embossed)]} userData={{ part: 'content' }}>
+      <primitive object={geometry} attach="geometry" />
+      <meshStandardMaterial color={CONTENT_COLOR} roughness={0.3} metalness={0.2} />
+    </mesh>
   );
 }
 

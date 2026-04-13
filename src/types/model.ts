@@ -77,6 +77,7 @@ export interface TextConfig {
 
 export interface SpotifyConfig {
   url: string;
+  showLogo: boolean;
 }
 
 export interface WifiCardConfig {
@@ -179,6 +180,7 @@ export const DEFAULT_CONFIG: ModelConfig = {
   },
   spotify: {
     url: 'https://open.spotify.com/track/4cOdK2wGLETKBW3PvgPWqT',
+    showLogo: true,
   },
   wifi: {
     ssid: 'MyNetwork',

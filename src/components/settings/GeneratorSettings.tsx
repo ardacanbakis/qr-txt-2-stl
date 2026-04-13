@@ -169,15 +169,21 @@ export function SpotifySettings({
   return (
     <div className="space-y-3">
       <div className="flex flex-col gap-1">
-        <Label>Spotify URL</Label>
+        <Label>Spotify URL or URI</Label>
         <TextInput
           value={config.url}
           onChange={(v) => onChange({ url: v })}
-          placeholder="https://open.spotify.com/track/..."
+          placeholder="https://open.spotify.com/track/... or spotify:track:..."
         />
       </div>
+      <Toggle
+        label="Include Spotify Logo"
+        checked={config.showLogo}
+        onChange={(v) => onChange({ showLogo: v })}
+      />
       <p className="text-xs text-gray-500 italic">
-        Preview uses a visual pattern derived from the URL. The geometry is suitable for multi-color prints.
+        Fetches the real scannable code from Spotify. Works with tracks, albums,
+        artists, playlists, and episodes. Disable the logo to print bars only.
       </p>
     </div>
   );

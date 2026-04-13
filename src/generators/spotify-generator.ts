@@ -1,86 +1,172 @@
 import * as THREE from 'three';
+import { SVGLoader } from 'three-stdlib';
 
 /**
- * Spotify scan codes consist of 23 vertical bars next to a circular logo area.
- * Each bar has one of 8 heights. Without access to the Spotify API we generate
- * a deterministic pattern from a hash of the input URL so that the preview
- * looks like a Spotify code and is consistent for a given URL.
+ * Real Spotify scannables, fetched directly from `scannables.scdn.co`.
+ * The endpoint returns a CORS-enabled SVG containing 23 bars + the Spotify
+ * logo. We parse it with SVGLoader, extrude the shapes, and optionally hide
+ * the logo (detected as the leftmost cluster of shapes).
  */
 
-const NUM_BARS = 23;
-const HEIGHT_LEVELS = 8;
+const SCANNABLES_ENDPOINT = 'https://scannables.scdn.co/uri/plain/svg';
 
-function hashString(s: string): number {
-  let h = 2166136261;
-  for (let i = 0; i < s.length; i++) {
-    h ^= s.charCodeAt(i);
-    h = Math.imul(h, 16777619);
+/**
+ * Parse any Spotify input (URL, URI, or ID) into a canonical `spotify:type:id`.
+ * Accepts:
+ *   - spotify:track:4uLU6hMCjMI75M1A2tKUQC
+ *   - https://open.spotify.com/track/4uLU6hMCjMI75M1A2tKUQC?si=...
+ *   - https://open.spotify.com/intl-en/album/4uLU6hMCjMI75M1A2tKUQC
+ */
+export function parseSpotifyUri(input: string): string | null {
+  const trimmed = (input || '').trim();
+  if (!trimmed) return null;
+
+  if (/^spotify:[a-z]+:[a-zA-Z0-9]+$/.test(trimmed)) return trimmed;
+
+  const m = trimmed.match(
+    /spotify\.com\/(?:intl-[a-z-]+\/)?([a-z]+)\/([a-zA-Z0-9]+)/i,
+  );
+  if (m) return `spotify:${m[1].toLowerCase()}:${m[2]}`;
+
+  return null;
+}
+
+/**
+ * Fetch the Spotify scannable SVG. `scannables.scdn.co` serves
+ * `Access-Control-Allow-Origin: *` so the direct fetch works in-browser.
+ */
+export async function fetchSpotifySvg(uri: string): Promise<string> {
+  const url = `${SCANNABLES_ENDPOINT}/000000/white/640/${encodeURIComponent(uri)}`;
+  const response = await fetch(url);
+  if (!response.ok) {
+    throw new Error(`Spotify scannable fetch failed (${response.status})`);
   }
-  return h >>> 0;
+  return response.text();
 }
 
-function generatePattern(url: string): number[] {
-  const base = hashString(url || 'spotify');
-  const bars: number[] = [];
-  let state = base;
-  for (let i = 0; i < NUM_BARS; i++) {
-    state = (state * 1103515245 + 12345) >>> 0;
-    bars.push((state % HEIGHT_LEVELS) + 1);
+interface ShapeInfo {
+  shape: THREE.Shape;
+  minX: number;
+  maxX: number;
+  minY: number;
+  maxY: number;
+}
+
+function computeShapeBounds(shape: THREE.Shape): Omit<ShapeInfo, 'shape'> {
+  const pts = shape.extractPoints(12).shape;
+  let minX = Infinity;
+  let maxX = -Infinity;
+  let minY = Infinity;
+  let maxY = -Infinity;
+  for (const p of pts) {
+    if (p.x < minX) minX = p.x;
+    if (p.x > maxX) maxX = p.x;
+    if (p.y < minY) minY = p.y;
+    if (p.y > maxY) maxY = p.y;
   }
-  return bars;
+  return { minX, maxX, minY, maxY };
 }
 
-export interface SpotifyGeometryResult {
-  geometry: THREE.BufferGeometry;
-  logoGeometry: THREE.BufferGeometry;
-}
-
-export function createSpotifyGeometry(
-  url: string,
+/**
+ * Build a 3D geometry from a Spotify scannable SVG.
+ *
+ * The merged geometry is centered at the origin and spans
+ * `[-contentHeight/2, +contentHeight/2]` in Z, matching the convention
+ * used by the other content generators (so the caller can position it
+ * with `contentZ()` directly).
+ */
+export function createSpotifyGeometryFromSvg(
+  svgText: string,
   plateWidth: number,
   plateHeight: number,
   borderWidth: number,
   contentHeight: number,
-  embossed: boolean,
-): SpotifyGeometryResult {
-  const availableWidth = plateWidth - borderWidth * 2;
-  const availableHeight = plateHeight - borderWidth * 2;
+  showLogo: boolean,
+): THREE.BufferGeometry {
+  const loader = new SVGLoader();
+  const svgData = loader.parse(svgText);
 
-  // Layout: circular logo on the left, bars fill the rest.
-  const logoRadius = Math.min(availableHeight * 0.35, availableWidth * 0.13);
-  const logoCenterX = -availableWidth / 2 + logoRadius + 1;
-  const barsAreaWidth = availableWidth - (logoRadius * 2) - 4;
-  const barsStartX = logoCenterX + logoRadius + 2;
+  // Gather shapes, skipping the black background fill.
+  const infos: ShapeInfo[] = [];
+  for (const path of svgData.paths) {
+    const hex = path.color.getHex();
+    // Background rect is pure black (#000000). Keep only the foreground (white).
+    if (hex === 0x000000) continue;
 
-  const barSpacing = barsAreaWidth / NUM_BARS;
-  const barWidth = barSpacing * 0.55;
-  const maxBarHeight = availableHeight * 0.7;
-  const minBarHeight = maxBarHeight * 0.2;
-
-  const pattern = generatePattern(url);
-  const z = embossed ? contentHeight / 2 : -contentHeight / 2;
-
-  const geometries: THREE.BufferGeometry[] = [];
-
-  for (let i = 0; i < NUM_BARS; i++) {
-    const level = pattern[i];
-    const h = minBarHeight + ((maxBarHeight - minBarHeight) * level) / HEIGHT_LEVELS;
-    const box = new THREE.BoxGeometry(barWidth, h, contentHeight);
-    const x = barsStartX + i * barSpacing + barSpacing / 2;
-    box.translate(x, 0, z);
-    geometries.push(box);
+    const shapes = SVGLoader.createShapes(path);
+    for (const shape of shapes) {
+      infos.push({ shape, ...computeShapeBounds(shape) });
+    }
   }
 
-  // Logo = simple ring: outer cylinder + hole pattern approximated with 4 smaller cylinders removed.
-  // For a simple visual we use a disc.
-  const disc = new THREE.CylinderGeometry(logoRadius, logoRadius, contentHeight, 48);
-  disc.rotateX(Math.PI / 2);
-  disc.translate(logoCenterX, 0, z);
+  if (infos.length === 0) return new THREE.BufferGeometry();
 
-  return {
-    geometry: mergeGeometries(geometries),
-    logoGeometry: disc,
+  // Compute overall foreground bounds.
+  let fgMinX = Infinity;
+  let fgMaxX = -Infinity;
+  let fgMinY = Infinity;
+  let fgMaxY = -Infinity;
+  for (const s of infos) {
+    if (s.minX < fgMinX) fgMinX = s.minX;
+    if (s.maxX > fgMaxX) fgMaxX = s.maxX;
+    if (s.minY < fgMinY) fgMinY = s.minY;
+    if (s.maxY > fgMaxY) fgMaxY = s.maxY;
+  }
+  const fgW = fgMaxX - fgMinX;
+
+  // Drop logo: Spotify scannables place the logo in the leftmost ~20%.
+  // Any shape whose center-x falls inside that band is treated as logo.
+  let kept = infos;
+  if (!showLogo) {
+    const logoBand = fgMinX + fgW * 0.22;
+    kept = infos.filter((s) => (s.minX + s.maxX) / 2 > logoBand);
+  }
+
+  if (kept.length === 0) return new THREE.BufferGeometry();
+
+  // Extrude each shape.
+  const extrudeSettings: THREE.ExtrudeGeometryOptions = {
+    depth: contentHeight,
+    bevelEnabled: false,
+    steps: 1,
   };
+  const extruded: THREE.BufferGeometry[] = [];
+  for (const s of kept) {
+    extruded.push(new THREE.ExtrudeGeometry(s.shape, extrudeSettings));
+  }
+
+  const merged = mergeGeometries(extruded);
+
+  // Recompute kept bounds (may exclude the logo region).
+  let kMinX = Infinity;
+  let kMaxX = -Infinity;
+  let kMinY = Infinity;
+  let kMaxY = -Infinity;
+  for (const s of kept) {
+    if (s.minX < kMinX) kMinX = s.minX;
+    if (s.maxX > kMaxX) kMaxX = s.maxX;
+    if (s.minY < kMinY) kMinY = s.minY;
+    if (s.maxY > kMaxY) kMaxY = s.maxY;
+  }
+  const keptW = Math.max(kMaxX - kMinX, 0.001);
+  const keptH = Math.max(kMaxY - kMinY, 0.001);
+  const keptCx = (kMinX + kMaxX) / 2;
+  const keptCy = (kMinY + kMaxY) / 2;
+
+  // Normalize: center in XY, flip Y (SVG is y-down, three is y-up).
+  merged.translate(-keptCx, -keptCy, 0);
+  merged.scale(1, -1, 1);
+
+  // Fit to plate while preserving aspect ratio.
+  const availW = plateWidth - borderWidth * 2;
+  const availH = plateHeight - borderWidth * 2;
+  const scale = Math.min(availW / keptW, availH / keptH);
+  merged.scale(scale, scale, 1);
+
+  // Center Z span around 0 to match the other generators' convention.
+  merged.translate(0, 0, -contentHeight / 2);
+
+  return merged;
 }
 
 function mergeGeometries(geometries: THREE.BufferGeometry[]): THREE.BufferGeometry {
@@ -95,20 +181,32 @@ function mergeGeometries(geometries: THREE.BufferGeometry[]): THREE.BufferGeomet
   for (const g of geometries) {
     const pos = g.attributes.position;
     const norm = g.attributes.normal;
-    const idx = g.index!;
+    const idx = g.index;
+
     for (let i = 0; i < pos.count * 3; i++) {
       positions.push(pos.array[i] as number);
-      normals.push(norm.array[i] as number);
+      normals.push(norm ? (norm.array[i] as number) : 0);
     }
-    for (let i = 0; i < idx.count; i++) {
-      indices.push((idx.array[i] as number) + offset);
+
+    if (idx) {
+      for (let i = 0; i < idx.count; i++) {
+        indices.push((idx.array[i] as number) + offset);
+      }
+    } else {
+      for (let i = 0; i < pos.count; i++) {
+        indices.push(i + offset);
+      }
     }
+
     offset += pos.count;
     g.dispose();
   }
 
   merged.setAttribute('position', new THREE.Float32BufferAttribute(positions, 3));
-  merged.setAttribute('normal', new THREE.Float32BufferAttribute(normals, 3));
+  if (normals.length) {
+    merged.setAttribute('normal', new THREE.Float32BufferAttribute(normals, 3));
+  }
   merged.setIndex(indices);
+  if (!normals.length) merged.computeVertexNormals();
   return merged;
 }
