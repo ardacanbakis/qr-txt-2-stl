@@ -4,7 +4,7 @@ import { useFont } from '@react-three/drei';
 import { generateQRMatrix, createQRGeometry, generateWifiString, generateVCardString } from '../../generators/qr-generator';
 import { createBasePlateGeometry } from '../../generators/base-generator';
 import { buildTextGeometry, isItalic } from '../../generators/text-generator';
-import { createSpotifyGeometryFromSvg, fetchSpotifySvg, parseSpotifyUri } from '../../generators/spotify-generator';
+import { loadSpotifyPixels, parseSpotifyUri } from '../../generators/spotify-generator';
 import { encodeBarcode, createBarcodeGeometry } from '../../generators/barcode-generator';
 import { loadImagePixels, createImageSilhouetteGeometry, type PixelGrid } from '../../generators/image-generator';
 import { createLithophaneGeometry } from '../../generators/lithophane-generator';
@@ -228,67 +228,63 @@ function TextGeneratorGroup({ config }: { config: ModelConfig }) {
 
 // --- Spotify Generator ---
 
-function useSpotifySvg(url: string): { svgText: string | null; error: string | null } {
-  const [svgText, setSvgText] = useState<string | null>(null);
-  const [error, setError] = useState<string | null>(null);
+/**
+ * Fixed rasterization resolution for the Spotify scannable. 400 captures the
+ * 23 bars + logo cleanly without over-sampling the SVG.
+ */
+const SPOTIFY_RASTER_RESOLUTION = 400;
+
+function useSpotifyPixels(url: string, showLogo: boolean): PixelGrid | null {
+  const [pixels, setPixels] = useState<PixelGrid | null>(null);
 
   useEffect(() => {
     const uri = parseSpotifyUri(url);
     if (!uri) {
-      Promise.resolve().then(() => {
-        setSvgText(null);
-        setError('Invalid Spotify URL or URI');
-      });
+      Promise.resolve().then(() => setPixels(null));
       return;
     }
 
     let cancelled = false;
-    fetchSpotifySvg(uri)
-      .then((text) => {
-        if (!cancelled) {
-          setSvgText(text);
-          setError(null);
-        }
+    loadSpotifyPixels(uri, SPOTIFY_RASTER_RESOLUTION, showLogo)
+      .then((p) => {
+        if (!cancelled) setPixels(p);
       })
-      .catch((e: Error) => {
-        if (!cancelled) {
-          setSvgText(null);
-          setError(e.message || 'Failed to fetch Spotify scannable');
-        }
+      .catch(() => {
+        if (!cancelled) setPixels(null);
       });
     return () => {
       cancelled = true;
     };
-  }, [url]);
+  }, [url, showLogo]);
 
-  return { svgText, error };
+  return pixels;
 }
 
 function SpotifyGeneratorGroup({ config }: { config: ModelConfig }) {
   const embossed = config.content.mode === 'embossed';
-  const { svgText } = useSpotifySvg(config.spotify.url);
+  const pixels = useSpotifyPixels(config.spotify.url, config.spotify.showLogo);
 
   const geometry = useMemo(() => {
-    if (!svgText) return new THREE.BufferGeometry();
-    try {
-      return createSpotifyGeometryFromSvg(
-        svgText,
-        config.base.width,
-        config.base.height,
-        config.base.borderWidth,
-        config.content.contentHeight,
-        config.spotify.showLogo,
-      );
-    } catch {
-      return new THREE.BufferGeometry();
-    }
+    if (!pixels) return new THREE.BufferGeometry();
+    // The scannable SVG has a black background and white bars, so we invert
+    // the silhouette to extrude the bars (not the background).
+    return createImageSilhouetteGeometry(
+      pixels,
+      config.base.width,
+      config.base.height,
+      config.base.borderWidth,
+      config.content.contentHeight,
+      128,
+      true,
+      embossed,
+    );
   }, [
-    svgText,
+    pixels,
     config.base.width,
     config.base.height,
     config.base.borderWidth,
     config.content.contentHeight,
-    config.spotify.showLogo,
+    embossed,
   ]);
 
   return (
