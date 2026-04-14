@@ -37,6 +37,7 @@ function App() {
     updateNameplate,
     updateMagnets,
     updateExport,
+    updateColors,
   } = useModelConfig();
   const modelRef = useRef<GeneratedModelRef>(null);
 
@@ -69,6 +70,7 @@ function App() {
         onNameplateChange={updateNameplate}
         onMagnetChange={updateMagnets}
         onExportChange={updateExport}
+        onColorsChange={updateColors}
         onExport={handleExport}
       />
       <main className="flex-1 h-full">

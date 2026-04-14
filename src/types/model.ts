@@ -134,6 +134,14 @@ export interface ExportConfig {
   quality: ExportQuality;
 }
 
+export interface ColorConfig {
+  base: string;
+  content: string;
+  text: string;
+  secondary: string;
+  logo: string;
+}
+
 export interface ModelConfig {
   generator: GeneratorType;
   base: BaseConfig;
@@ -149,6 +157,7 @@ export interface ModelConfig {
   magnets: MagnetHoleConfig;
   mounting: MountingConfig;
   export: ExportConfig;
+  colors: ColorConfig;
 }
 
 export const DEFAULT_CONFIG: ModelConfig = {
@@ -242,5 +251,12 @@ export const DEFAULT_CONFIG: ModelConfig = {
   export: {
     separateParts: false,
     quality: 'medium',
+  },
+  colors: {
+    base: '#e6e6ea',
+    content: '#000000',
+    text: '#000000',
+    secondary: '#333333',
+    logo: '#000000',
   },
 };

@@ -3,6 +3,7 @@ import { GeneratorTabs } from '../settings/GeneratorTabs';
 import { BaseSettings } from '../settings/BaseSettings';
 import { ModelSettings } from '../settings/ModelSettings';
 import { ExportSettings } from '../settings/ExportSettings';
+import { ColorSettings } from '../settings/ColorSettings';
 import {
   QRSettings,
   TextSettings,
@@ -29,6 +30,7 @@ import type {
   LithophaneConfig,
   BarcodeConfig,
   NameplateConfig,
+  ColorConfig,
 } from '../../types/model';
 
 interface SidebarProps {
@@ -46,6 +48,7 @@ interface SidebarProps {
   onNameplateChange: (u: Partial<NameplateConfig>) => void;
   onMagnetChange: (u: Partial<MagnetHoleConfig>) => void;
   onExportChange: (u: Partial<ExportConfig>) => void;
+  onColorsChange: (u: Partial<ColorConfig>) => void;
   onExport: () => void;
 }
 
@@ -77,6 +80,7 @@ export function Sidebar(props: SidebarProps) {
     onNameplateChange,
     onMagnetChange,
     onExportChange,
+    onColorsChange,
     onExport,
   } = props;
 
@@ -126,6 +130,14 @@ export function Sidebar(props: SidebarProps) {
             />
           </SectionHeader>
         )}
+
+        <SectionHeader title="Colors" defaultOpen={false}>
+          <ColorSettings
+            colors={config.colors}
+            generator={config.generator}
+            onChange={onColorsChange}
+          />
+        </SectionHeader>
 
         <SectionHeader title="Export" defaultOpen>
           <ExportSettings

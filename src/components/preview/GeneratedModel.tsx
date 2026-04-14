@@ -20,10 +20,6 @@ interface GeneratedModelProps {
 
 // --- Shared helpers ---
 
-const CONTENT_COLOR = '#1a1a2e';
-const BASE_COLOR = '#e6e6ea';
-const TEXT_COLOR = '#0f172a';
-
 function contentZ(base: ModelConfig['base'], content: ModelConfig['content'], embossed: boolean): number {
   return embossed
     ? base.thickness / 2
@@ -61,7 +57,7 @@ function BaseMesh({ config }: { config: ModelConfig }) {
       userData={{ part: 'base' }}
     >
       <primitive object={geometry} attach="geometry" />
-      <meshStandardMaterial color={BASE_COLOR} roughness={0.4} metalness={0.1} />
+      <meshStandardMaterial color={config.colors.base} roughness={0.4} metalness={0.1} />
     </mesh>
   );
 }
@@ -155,7 +151,7 @@ function QRGeneratorGroup({ config }: { config: ModelConfig }) {
   return (
     <mesh position={[0, 0, contentZ(config.base, config.content, embossed)]} userData={{ part: 'content' }}>
       <primitive object={geometry} attach="geometry" />
-      <meshStandardMaterial color={CONTENT_COLOR} roughness={0.3} metalness={0.2} />
+      <meshStandardMaterial color={config.colors.content} roughness={0.3} metalness={0.2} />
     </mesh>
   );
 }
@@ -170,7 +166,7 @@ function TextContent({
   maxWidth,
   maxHeight,
   position,
-  color = TEXT_COLOR,
+  color,
   part = 'text',
 }: {
   text: string;
@@ -180,7 +176,7 @@ function TextContent({
   maxWidth: number;
   maxHeight: number;
   position: [number, number, number];
-  color?: string;
+  color: string;
   part?: string;
 }) {
   const font = useFont(fontUrl(fontStyle));
@@ -224,6 +220,7 @@ function TextGeneratorGroup({ config }: { config: ModelConfig }) {
       maxWidth={availW}
       maxHeight={availH}
       position={[0, 0, contentZ(config.base, config.content, embossed)]}
+      color={config.colors.text}
       part="text"
     />
   );
@@ -297,7 +294,7 @@ function SpotifyGeneratorGroup({ config }: { config: ModelConfig }) {
   return (
     <mesh position={[0, 0, contentZ(config.base, config.content, embossed)]} userData={{ part: 'content' }}>
       <primitive object={geometry} attach="geometry" />
-      <meshStandardMaterial color={CONTENT_COLOR} roughness={0.3} metalness={0.2} />
+      <meshStandardMaterial color={config.colors.content} roughness={0.3} metalness={0.2} />
     </mesh>
   );
 }
@@ -343,7 +340,7 @@ function WifiGeneratorGroup({ config }: { config: ModelConfig }) {
     <>
       <mesh position={[0, qrYOffset, z]} userData={{ part: 'content' }}>
         <primitive object={qrGeometry} attach="geometry" />
-        <meshStandardMaterial color={CONTENT_COLOR} roughness={0.3} metalness={0.2} />
+        <meshStandardMaterial color={config.colors.content} roughness={0.3} metalness={0.2} />
       </mesh>
       {config.wifi.showText && (
         <TextContent
@@ -354,6 +351,7 @@ function WifiGeneratorGroup({ config }: { config: ModelConfig }) {
           maxWidth={availW}
           maxHeight={textBandHeight * 0.8}
           position={[0, -config.base.height / 2 + textBandHeight / 2 + config.base.borderWidth / 2, z]}
+          color={config.colors.text}
           part="text"
         />
       )}
@@ -402,7 +400,7 @@ function VCardGeneratorGroup({ config }: { config: ModelConfig }) {
     <>
       <mesh position={[0, qrYOffset, z]} userData={{ part: 'content' }}>
         <primitive object={qrGeometry} attach="geometry" />
-        <meshStandardMaterial color={CONTENT_COLOR} roughness={0.3} metalness={0.2} />
+        <meshStandardMaterial color={config.colors.content} roughness={0.3} metalness={0.2} />
       </mesh>
       {config.vcard.showText && (
         <TextContent
@@ -413,6 +411,7 @@ function VCardGeneratorGroup({ config }: { config: ModelConfig }) {
           maxWidth={availW}
           maxHeight={textBandHeight * 0.8}
           position={[0, -config.base.height / 2 + textBandHeight / 2 + config.base.borderWidth / 2, z]}
+          color={config.colors.text}
           part="text"
         />
       )}
@@ -444,6 +443,7 @@ function NameplateGeneratorGroup({ config }: { config: ModelConfig }) {
         maxWidth={availW}
         maxHeight={halfH * 0.9}
         position={[0, primaryY, z]}
+        color={config.colors.text}
         part="text"
       />
       {hasSecondary && (
@@ -455,8 +455,8 @@ function NameplateGeneratorGroup({ config }: { config: ModelConfig }) {
           maxWidth={availW}
           maxHeight={halfH * 0.5}
           position={[0, secondaryY, z]}
+          color={config.colors.secondary}
           part="secondary"
-          color="#334155"
         />
       )}
     </>
@@ -490,7 +490,7 @@ function BarcodeGeneratorGroup({ config }: { config: ModelConfig }) {
     <>
       <mesh position={[0, 0, z]} userData={{ part: 'content' }}>
         <primitive object={barcodeGeometry} attach="geometry" />
-        <meshStandardMaterial color={CONTENT_COLOR} roughness={0.3} metalness={0.2} />
+        <meshStandardMaterial color={config.colors.content} roughness={0.3} metalness={0.2} />
       </mesh>
       {config.barcode.showText && (
         <TextContent
@@ -501,6 +501,7 @@ function BarcodeGeneratorGroup({ config }: { config: ModelConfig }) {
           maxWidth={availW}
           maxHeight={reservedBottom * 0.7}
           position={[0, -config.base.height / 2 + reservedBottom / 2 + config.base.borderWidth / 2, z]}
+          color={config.colors.text}
           part="text"
         />
       )}
@@ -552,7 +553,7 @@ function ImageGeneratorGroup({ config }: { config: ModelConfig }) {
   return (
     <mesh position={[0, 0, contentZ(config.base, config.content, embossed)]} userData={{ part: 'content' }}>
       <primitive object={geometry} attach="geometry" />
-      <meshStandardMaterial color={CONTENT_COLOR} roughness={0.3} metalness={0.2} />
+      <meshStandardMaterial color={config.colors.content} roughness={0.3} metalness={0.2} />
     </mesh>
   );
 }
@@ -577,7 +578,7 @@ function LithophaneGeneratorGroup({ config }: { config: ModelConfig }) {
   return (
     <mesh position={[0, 0, 0]} userData={{ part: 'base' }}>
       <primitive object={geometry} attach="geometry" />
-      <meshStandardMaterial color={BASE_COLOR} roughness={0.5} metalness={0.05} />
+      <meshStandardMaterial color={config.colors.base} roughness={0.5} metalness={0.05} />
     </mesh>
   );
 }

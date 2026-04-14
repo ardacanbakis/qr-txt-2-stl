@@ -14,15 +14,31 @@ import type {
   LithophaneConfig,
   BarcodeConfig,
   NameplateConfig,
+  ColorConfig,
   GeneratorType,
 } from '../types/model';
 import { DEFAULT_CONFIG } from '../types/model';
+import { PLATE_PRESETS } from '../generators/plate-presets';
 
 export function useModelConfig() {
   const [config, setConfig] = useState<ModelConfig>(DEFAULT_CONFIG);
 
   const setGenerator = useCallback((generator: GeneratorType) => {
-    setConfig(prev => ({ ...prev, generator }));
+    setConfig(prev => {
+      const preset = PLATE_PRESETS[generator];
+      return {
+        ...prev,
+        generator,
+        base: {
+          ...prev.base,
+          width: preset.width,
+          height: preset.height,
+          shape: preset.shape,
+          cornerRadius: preset.cornerRadius,
+          borderWidth: preset.borderWidth,
+        },
+      };
+    });
   }, []);
 
   const updateBase = useCallback((updates: Partial<BaseConfig>) => {
@@ -77,6 +93,10 @@ export function useModelConfig() {
     setConfig(prev => ({ ...prev, export: { ...prev.export, ...updates } }));
   }, []);
 
+  const updateColors = useCallback((updates: Partial<ColorConfig>) => {
+    setConfig(prev => ({ ...prev, colors: { ...prev.colors, ...updates } }));
+  }, []);
+
   const resetConfig = useCallback(() => {
     setConfig(DEFAULT_CONFIG);
   }, []);
@@ -97,6 +117,7 @@ export function useModelConfig() {
     updateMagnets,
     updateMounting,
     updateExport,
+    updateColors,
     resetConfig,
   };
 }
