@@ -250,7 +250,7 @@ export const DEFAULT_CONFIG: ModelConfig = {
   },
   export: {
     separateParts: false,
-    quality: 'medium',
+    quality: 'high',
   },
   colors: {
     base: '#e6e6ea',

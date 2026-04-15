@@ -33,8 +33,12 @@ import type {
   ColorConfig,
 } from '../../types/model';
 
+export type LayoutMode = 'single' | 'dual';
+
 interface SidebarProps {
   config: ModelConfig;
+  layout: LayoutMode;
+  onLayoutChange: (l: LayoutMode) => void;
   onGeneratorChange: (g: GeneratorType) => void;
   onBaseChange: (u: Partial<BaseConfig>) => void;
   onContentChange: (u: Partial<ContentConfig>) => void;
@@ -64,9 +68,32 @@ const GENERATOR_LABELS: Record<GeneratorType, string> = {
   nameplate: 'Nameplate',
 };
 
+/** Icon: single column (one sidebar) */
+function IconSingle() {
+  return (
+    <svg viewBox="0 0 18 14" className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth={1.5}>
+      <rect x="1" y="1" width="5" height="12" rx="1" />
+      <rect x="8" y="1" width="9" height="12" rx="1" />
+    </svg>
+  );
+}
+
+/** Icon: two columns (dual sidebar) */
+function IconDual() {
+  return (
+    <svg viewBox="0 0 20 14" className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth={1.5}>
+      <rect x="1" y="1" width="5" height="12" rx="1" />
+      <rect x="7.5" y="1" width="5" height="12" rx="1" />
+      <rect x="14" y="1" width="5" height="12" rx="1" />
+    </svg>
+  );
+}
+
 export function Sidebar(props: SidebarProps) {
   const {
     config,
+    layout,
+    onLayoutChange,
     onGeneratorChange,
     onBaseChange,
     onContentChange,
@@ -84,15 +111,26 @@ export function Sidebar(props: SidebarProps) {
     onExport,
   } = props;
 
+  const isDual = layout === 'dual';
   const showBase = config.generator !== 'lithophane';
   const showModel = config.generator !== 'lithophane' && config.generator !== 'image';
 
   return (
-    <aside className="w-[380px] min-w-[380px] h-full bg-gray-800 border-r border-gray-700 flex flex-col overflow-hidden">
+    <aside className={`${isDual ? 'w-[300px] min-w-[300px]' : 'w-[380px] min-w-[380px]'} h-full bg-gray-800 border-r border-gray-700 flex flex-col overflow-hidden transition-all`}>
       {/* Header */}
-      <div className="px-4 py-4 border-b border-gray-700">
-        <h1 className="text-lg font-bold text-white tracking-tight">QR-TXT-2-STL</h1>
-        <p className="text-xs text-gray-400 mt-0.5">Generate 3D-printable STL files</p>
+      <div className="px-4 py-3 border-b border-gray-700 flex items-center justify-between">
+        <div>
+          <h1 className="text-base font-bold text-white tracking-tight">STL Generator</h1>
+          <p className="text-xs text-gray-400 mt-0.5">3D-printable STL files</p>
+        </div>
+        {/* Layout toggle */}
+        <button
+          onClick={() => onLayoutChange(isDual ? 'single' : 'dual')}
+          title={isDual ? 'Switch to single sidebar' : 'Switch to dual sidebar'}
+          className="w-8 h-8 flex items-center justify-center rounded-md bg-gray-700 hover:bg-gray-600 text-gray-300 hover:text-white transition-colors"
+        >
+          {isDual ? <IconSingle /> : <IconDual />}
+        </button>
       </div>
 
       {/* Generator tabs */}
@@ -114,38 +152,43 @@ export function Sidebar(props: SidebarProps) {
           {config.generator === 'nameplate' && <NameplateSettings config={config.nameplate} onChange={onNameplateChange} />}
         </SectionHeader>
 
-        {showBase && (
-          <SectionHeader title="Base Plate" defaultOpen>
-            <BaseSettings base={config.base} onChange={onBaseChange} />
-          </SectionHeader>
+        {/* In single-sidebar mode, also show base/model/colors/export here */}
+        {!isDual && (
+          <>
+            {showBase && (
+              <SectionHeader title="Base Plate" defaultOpen>
+                <BaseSettings base={config.base} onChange={onBaseChange} />
+              </SectionHeader>
+            )}
+
+            {showModel && (
+              <SectionHeader title="Model" defaultOpen>
+                <ModelSettings
+                  content={config.content}
+                  magnets={config.magnets}
+                  onContentChange={onContentChange}
+                  onMagnetChange={onMagnetChange}
+                />
+              </SectionHeader>
+            )}
+
+            <SectionHeader title="Colors" defaultOpen={false}>
+              <ColorSettings
+                colors={config.colors}
+                generator={config.generator}
+                onChange={onColorsChange}
+              />
+            </SectionHeader>
+
+            <SectionHeader title="Export" defaultOpen>
+              <ExportSettings
+                exportConfig={config.export}
+                onChange={onExportChange}
+                onExport={onExport}
+              />
+            </SectionHeader>
+          </>
         )}
-
-        {showModel && (
-          <SectionHeader title="Model" defaultOpen>
-            <ModelSettings
-              content={config.content}
-              magnets={config.magnets}
-              onContentChange={onContentChange}
-              onMagnetChange={onMagnetChange}
-            />
-          </SectionHeader>
-        )}
-
-        <SectionHeader title="Colors" defaultOpen={false}>
-          <ColorSettings
-            colors={config.colors}
-            generator={config.generator}
-            onChange={onColorsChange}
-          />
-        </SectionHeader>
-
-        <SectionHeader title="Export" defaultOpen>
-          <ExportSettings
-            exportConfig={config.export}
-            onChange={onExportChange}
-            onExport={onExport}
-          />
-        </SectionHeader>
       </div>
 
       {/* Footer */}

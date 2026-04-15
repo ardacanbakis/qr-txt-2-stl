@@ -130,6 +130,11 @@ function SceneController({
 
     const distance = Math.max(current.r, 80);
 
+    // Reset orbit target to origin so view presets always look at the model center
+    if (controlsRef.current) {
+      controlsRef.current.target.set(0, 0, 0);
+    }
+
     // Shortest theta path
     let dTheta = preset.theta - current.theta;
     if (dTheta > Math.PI) dTheta -= 2 * Math.PI;
@@ -270,8 +275,8 @@ export const Preview3D = forwardRef<GeneratedModelRef, Preview3DProps>(({ config
           />
         )}
 
-        {/* View cube - top left */}
-        <GizmoHelper alignment="top-left" margin={[75, 75]}>
+        {/* View cube - bottom left (top-left is now occupied by toolbar) */}
+        <GizmoHelper alignment="bottom-left" margin={[75, 75]}>
           <GizmoViewcube
             faces={['Right', 'Left', 'Back', 'Front', 'Top', 'Bottom']}
             color={darkMode ? '#374151' : '#e4e4e7'}
@@ -308,13 +313,6 @@ export const Preview3D = forwardRef<GeneratedModelRef, Preview3DProps>(({ config
         onToggleFullscreen={toggleFullscreen}
         onBuildPlateChange={setBuildPlateIndex}
       />
-
-      {/* Controls help - bottom left */}
-      <div className={`absolute bottom-3 left-3 text-xs px-2 py-1 rounded ${
-        darkMode ? 'text-gray-500 bg-gray-900/80' : 'text-gray-400 bg-white/80 border border-gray-200'
-      }`}>
-        LMB: Rotate &middot; RMB: Pan &middot; Scroll: Zoom
-      </div>
 
       {/* Dimensions - top right */}
       <div className={`absolute top-3 right-3 text-xs px-3 py-2 rounded font-mono space-y-0.5 ${

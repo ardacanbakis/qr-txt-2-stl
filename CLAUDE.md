@@ -1,6 +1,6 @@
-# QR-TXT-2-STL - Project Reference
+# STL Generator - Project Reference
 
-> A web app to generate ready-to-print STL files from text, QR codes, links (Spotify, URLs), and more.
+> A web app to generate ready-to-print STL files from text, QR codes, images, Spotify codes, barcodes, lithophanes, and more.
 > Future: map-based terrain/street STL generation.
 
 ---
@@ -16,8 +16,8 @@
 | **QR Generation** | qrcode-generator (client-side) | Lightweight, no server dependency |
 | **Auth** | Firebase Auth (optional) | Users CAN sign in to save/load projects, app works without login |
 | **Hosting** | Firebase Hosting | Already familiar from daily-tracker |
-| **Repo** | ardacanbakis/qr-txt-2-stl | Branch: claude/stl-generator-webapp-IHm9I |
-| **UI Layout** | Desktop-first, side-by-side (settings left, 3D preview right) | Responsive-friendly design for future mobile/tablet support |
+| **Repo** | ardacanbakis/qr-txt-2-stl | Branch: claude/stl-generator-webapp-IHm9I (pushed as origin/claude) |
+| **UI Layout** | Desktop-first; single or dual sidebar toggle | Single: left sidebar only. Dual: left (generator) + right (base/model/export) |
 
 ---
 
@@ -54,23 +54,26 @@ qr-txt-2-stl/
 │   └── fonts/                   # helvetiker_regular + _bold typeface JSON
 ├── src/
 │   ├── main.tsx                 # Entry point
-│   ├── App.tsx                  # Root component, wires hooks ↔ sidebar ↔ preview, handles export
+│   ├── App.tsx                  # Root component, layout state (single/dual), wires hooks ↔ sidebars ↔ preview
 │   ├── components/
 │   │   ├── layout/
-│   │   │   └── Sidebar.tsx           # Left settings panel (dispatcher by generator type)
+│   │   │   ├── Sidebar.tsx           # Left panel: header + layout toggle + generator tabs + generator settings
+│   │   │   │                         #   (+ base/model/colors/export in single-sidebar mode)
+│   │   │   └── RightPanel.tsx        # Right panel (dual mode only): base/model/colors/export
 │   │   ├── settings/
 │   │   │   ├── GeneratorTabs.tsx     # 9-tab generator type selector
 │   │   │   ├── GeneratorSettings.tsx # All per-generator settings panels
 │   │   │   ├── BaseSettings.tsx      # Base plate shape/size/thickness
 │   │   │   ├── ModelSettings.tsx     # Content height, magnet holes, mounting
-│   │   │   └── ExportSettings.tsx    # STL export options, separateParts toggle
+│   │   │   ├── ExportSettings.tsx    # STL export options, separateParts toggle, ZIP download
+│   │   │   └── ColorSettings.tsx     # Per-generator color slots
 │   │   ├── preview/
 │   │   │   ├── Preview3D.tsx         # R3F Canvas wrapper, camera controller, view presets
-│   │   │   ├── ViewToolbar.tsx       # Floating 3D toolbar (views, zoom, grid, theme, fullscreen, plate)
+│   │   │   ├── ViewToolbar.tsx       # Horizontal top-bar toolbar (views, nav, zoom, toggles, plate)
 │   │   │   ├── buildPlates.ts        # BuildPlate type + BUILD_PLATES presets (H2D, A1, X1C...)
 │   │   │   └── GeneratedModel.tsx    # Dispatcher: routes config.generator → sub-components
 │   │   └── shared/
-│   │       ├── Slider.tsx
+│   │       ├── Slider.tsx            # Slider + inline number input (editable)
 │   │       ├── Select.tsx
 │   │       ├── Toggle.tsx
 │   │       ├── NumberInput.tsx
@@ -78,12 +81,13 @@ qr-txt-2-stl/
 │   ├── generators/
 │   │   ├── qr-generator.ts          # QR code matrix → 3D geometry
 │   │   ├── text-generator.ts        # Text → 3D geometry (three-stdlib TextGeometry + italic shear)
-│   │   ├── spotify-generator.ts     # Spotify-style bar pattern from URL hash
+│   │   ├── spotify-generator.ts     # Fetches real scannables from scdn.co, rasterizes SVG → pixel grid
 │   │   ├── barcode-generator.ts     # CODE 39 barcode → 3D bars
 │   │   ├── image-generator.ts       # Image → grayscale grid → silhouette with row-run merging
 │   │   ├── lithophane-generator.ts  # Heightmap lithophane (closed volume with walls)
-│   │   ├── base-generator.ts        # Base plate geometry (rect, round, keychain)
-│   │   └── stl-exporter.ts          # exportSTL + exportSeparateParts (by userData.part tags)
+│   │   ├── base-generator.ts        # Base plate geometry (rect, round, keychain) + keychain hole helper
+│   │   ├── plate-presets.ts         # Per-generator default plate size/shape presets
+│   │   └── stl-exporter.ts          # exportSTL (single) + exportSeparateParts (ZIP of per-part STLs)
 │   ├── hooks/
 │   │   └── useModelConfig.ts        # Central state for all model parameters + per-generator updaters
 │   └── types/
@@ -95,9 +99,6 @@ qr-txt-2-stl/
 └── package.json
 ```
 
-Generators not yet migrated to their own file (still inline in `GeneratedModel.tsx`
-sub-components): WiFi, vCard, Nameplate — these reuse the QR and Text generators.
-
 ---
 
 ## Feature Specifications
@@ -105,42 +106,48 @@ sub-components): WiFi, vCard, Nameplate — these reuse the QR and Text generato
 ### Generator Types (9 total, selected via tabs in sidebar)
 1. **QR Code** → Plain text / URL encoded as QR matrix → extruded modules on plate
 2. **Text Label** → Custom embossed/engraved 3D text (regular / bold / italic / bold-italic)
-3. **Spotify** → Spotify URL → deterministic scan-style bar pattern + circular logo
+3. **Spotify** → Real Spotify scannable SVG fetched from `scannables.scdn.co`, rasterized to pixel grid, extruded as silhouette geometry
 4. **WiFi** → SSID + password + encryption → WiFi-URI QR code (optional label)
 5. **vCard** → Contact fields → vCard-string QR code (optional name label)
 6. **Barcode** → CODE 39 (CODE 128 / EAN-13 fall back to CODE 39) with optional text caption
 7. **Image Silhouette** → Upload image → threshold → extruded pixel silhouette
 8. **Lithophane** → Upload photo → grayscale heightmap closed-volume print
 9. **Nameplate** → Primary + secondary text on a plate, styled font
-*(Calendar generator deferred — not yet implemented.)*
 
 ### Base Plate Options
-- **Shapes**: Rectangle, Rounded Rectangle, Circle, Custom (keychain w/ hole)
+- **Shapes**: Rectangle, Rounded Rectangle, Circle, Custom (keychain w/ tab + hole built in)
 - **Dimensions**: Width (mm), Height (mm), Thickness (mm) — all user-configurable
 - **Border**: Configurable border width around content
-- **Keychain Hole**: Toggle + diameter setting
+- **Keychain Hole**: Toggle + diameter for non-keychain shapes (shown as red indicator in preview)
 
 ### 3D Model Customization
 - **Content Height**: How much the QR/text protrudes above (or into) the base
 - **Mode**: Embossed (raised) or Engraved (recessed)
 - **Magnet Holes**: Toggle + diameter + depth (standard 6x3mm, 8x3mm, 10x3mm presets)
 - **Magnet Hole Positions**: Corners, edges, center, or custom count
-- **Mounting Options**: Screw holes, wall mount bracket, fridge magnet recess
-- **Fillet/Chamfer**: Edge treatment on base plate
 
 ### Export Options
 - **Single STL**: Combined model, one file
-- **Separate parts**: Downloads one STL per tagged part (`base`, `border`, `content`, `text`, `secondary`, `logo`) — ideal for multi-color / dual-extrusion prints. Meshes are tagged via `userData.part` and grouped by the exporter.
+- **Separate parts → ZIP**: All parts (base, content, text, etc.) bundled in a single ZIP; pure JS zip builder, no external dependency. Ideal for multi-color / dual-extrusion prints.
 - **Units**: Millimeters (always)
-- **Quality**: Low/Medium/High polygon count
+- **Quality**: Low/Medium/High polygon count (default: High)
 
 ### 3D Preview
 - Z-up CAD-style camera with orbit / pan / zoom
-- Animated view presets (Top / Bottom / Front / Back / Left / Right / Home / Fit)
-- ViewCube + axis gizmo, dark/light toggle, fullscreen, grid toggle
+- **Horizontal toolbar at top**: view presets, home/fit, zoom, grid/theme/fullscreen toggles, build plate selector
+- Home / view preset buttons reset OrbitControls target to origin before animating (fixes "home doesn't work after pan")
+- ViewCube (bottom-left) + axis gizmo (bottom-right), dark/light toggle, fullscreen, grid toggle
 - Build plate presets (Bambu H2D, A1, A1 Mini, X1C, P1S) as a sized grid floor
 - Real-time updates via React state + `useMemo`-cached geometries
 - Async font loading via drei's `useFont` wrapped in `<Suspense>` inside the Canvas
+
+### Layout Modes
+- **Single sidebar** (default): full left sidebar with all settings panels
+- **Dual sidebar**: left panel (generator input settings, 300px) + 3D preview (center) + right panel (base/model/colors/export, 280px)
+- Toggle button in sidebar header switches between modes
+
+### Shared UI Slider
+- Every `<Slider>` renders both a range input (drag) and an inline number text input (type exact value + Enter/blur to commit). Clamped to min/max on commit.
 
 ---
 
@@ -177,7 +184,7 @@ sub-components): WiFi, vCard, Nameplate — these reuse the QR and Text generato
 ### Phase 4: Additional Input Types
 - [x] WiFi credential input (SSID, password, encryption type)
 - [x] vCard input (name, phone, email, address fields)
-- [x] Spotify link parsing → Spotify scan code geometry
+- [x] Spotify link → real scannables.scdn.co SVG → rasterized geometry
 - [x] Input type selector tabs/dropdown in sidebar (9-tab GeneratorTabs)
 - [x] Barcode (CODE 39) generator
 - [x] Image silhouette generator
@@ -192,29 +199,34 @@ sub-components): WiFi, vCard, Nameplate — these reuse the QR and Text generato
 - [ ] Combined QR + text on same plate option
 
 ### Phase 6: Advanced Model Features
-- [x] Magnet hole geometry (CSG boolean subtract)
+- [x] Magnet hole geometry (visual indicator)
 - [x] Magnet hole presets (6x3mm, 8x3mm, 10x3mm)
 - [x] Magnet hole position options (corners / edges / center)
+- [x] Keychain hole visual indicator in 3D preview
+- [x] Separate-parts STL export → ZIP bundle (pure JS zip builder)
 - [ ] Screw hole option
 - [ ] Wall mount bracket geometry
 - [ ] Fridge magnet recess option
-- [x] Separate-parts STL export (by `userData.part` tags)
 
-### Phase 7: Firebase Integration
+### Phase 7: UX Polish
+- [x] Rename app to "STL Generator"
+- [x] Export quality default set to High
+- [x] Horizontal viewport toolbar (top of preview, not left side panel)
+- [x] Home/view preset buttons fix (reset OrbitControls target → no more wrong-angle home)
+- [x] Dual sidebar layout toggle (generator left / model params right)
+- [x] Slider inline number input (type exact value, Enter or blur to commit)
+- [ ] Responsive sidebar collapse for smaller screens
+- [ ] Loading states for STL export
+- [ ] Dimension annotation overlays on 3D preview
+- [ ] Preset templates (business card QR, WiFi sign, Spotify keychain, etc.)
+- [ ] Undo/redo for settings changes
+
+### Phase 8: Firebase Integration
 - [ ] Set up Firebase project + config
 - [ ] Implement optional Firebase Auth (Google sign-in)
 - [ ] Save/load project configurations to Firestore
 - [ ] User dashboard for saved projects
 - [ ] Deploy to Firebase Hosting
-
-### Phase 8: Polish & UX
-- [ ] Responsive sidebar collapse for smaller screens
-- [ ] Loading states and progress indicators for STL export
-- [ ] Dimension annotation overlays on 3D preview
-- [ ] Preset templates (business card QR, WiFi sign, Spotify keychain, etc.)
-- [ ] Undo/redo for settings changes
-- [ ] Keyboard shortcuts for common actions
-- [ ] Dark/light mode toggle
 
 ### Phase 9: Map STL Generation (Future)
 - [ ] Research map data sources (OpenStreetMap, Mapbox, elevation APIs)
@@ -222,7 +234,6 @@ sub-components): WiFi, vCard, Nameplate — these reuse the QR and Text generato
 - [ ] Terrain elevation → heightmap → 3D relief mesh
 - [ ] Street/building layout → extruded geometry
 - [ ] Server-side generation via Firebase Cloud Functions (heavy computation)
-- [ ] Progress indicator for server-side generation
 - [ ] Map STL customization (scale, exaggeration, base thickness)
 
 ---
@@ -241,17 +252,17 @@ firebase serve       # Local Firebase emulator
 
 # Git
 git checkout claude/stl-generator-webapp-IHm9I
-git push -u origin claude/stl-generator-webapp-IHm9I
+git push origin claude/stl-generator-webapp-IHm9I:claude   # remote branch is named "claude"
 ```
 
 ---
 
 ## Design Guidelines
 
-- **Desktop-first** layout: settings sidebar (350-400px) on left, 3D preview fills remaining space
-- **Color scheme**: Dark sidebar, light preview area (or dark mode toggle later)
-- **Typography**: System font stack for UI, clean and minimal
-- **Settings organization**: Collapsible sections in sidebar (Input, Base, Model, Export)
+- **Desktop-first** layout: settings sidebar (380px single / 300px dual) on left, 3D preview fills remaining space, optional right panel (280px) in dual mode
+- **Color scheme**: Dark sidebar, dark/light preview toggle
+- **Toolbar**: Horizontal pill-group bar at the top of the 3D viewport
+- **Sliders**: Always paired with an inline editable number input
 - **Preview controls**: Orbit (left drag), Pan (right drag), Zoom (scroll)
 - **Responsive strategy**: Sidebar becomes bottom sheet or full-screen overlay on mobile (Phase 8)
 
@@ -260,7 +271,8 @@ git push -u origin claude/stl-generator-webapp-IHm9I
 ## Key Technical Notes
 
 1. **STL Generation is client-side**: The Three.js scene IS the model. STLExporter serializes the scene geometry directly. No server round-trip needed.
-2. **CSG Operations** (for magnet holes, keyholes): Use `three-bvh-csg` or `three-csg-ts` for boolean subtract operations on meshes.
-3. **Spotify Codes**: These are NOT QR codes. They use a barcode-like visual format. We need to reverse-engineer or use Spotify's embed API to get the code pattern.
-4. **Performance**: For complex models, use `useMemo` to cache geometry and only recompute when relevant settings change.
-5. **Multi-material export**: Generate two separate STL files — one for the base plate, one for the raised/recessed content. Users load both into their slicer and assign different materials.
+2. **ZIP export**: Implemented as a pure JS stored-zip builder (no compression, no external deps). CRC-32 computed inline. STL files are already binary so compression wouldn't help much.
+3. **Spotify Codes**: Real scannables fetched from `scannables.scdn.co/uri/plain/svg/000000/white/640/{uri}` (CORS enabled). SVG is rasterized via a `<canvas>` element and handed to the image silhouette geometry builder with `invert: true`.
+4. **Keychain hole**: Shown as a red transparent cylinder indicator in the preview (cannot subtract geometry without CSG). The `createKeychainHoleGeometry` helper in `base-generator.ts` generates the correct dimensions for the slicer.
+5. **Performance**: `useMemo`-cached geometries per generator. Async loads (Spotify fetch, image load) use `useEffect` + state with cancellation on cleanup.
+6. **Home button fix**: All view-preset commands now call `controlsRef.current.target.set(0,0,0)` before animating, ensuring the camera always looks at the model center after panning.
