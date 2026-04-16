@@ -45,7 +45,7 @@ function ColorRow({ label, value, onChange }: ColorRowProps) {
 const COLOR_SLOTS: Record<GeneratorType, Array<keyof ColorConfig>> = {
   qr:         ['base', 'content'],
   text:       ['base', 'text'],
-  spotify:    ['base', 'content'],
+  spotify:    ['base', 'content', 'logo'],
   wifi:       ['base', 'content', 'text'],
   vcard:      ['base', 'content', 'text'],
   image:      ['base', 'content'],

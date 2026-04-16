@@ -4,7 +4,7 @@ import { useFont } from '@react-three/drei';
 import { generateQRMatrix, createQRGeometry, generateWifiString, generateVCardString } from '../../generators/qr-generator';
 import { createBasePlateGeometry, createKeychainHoleGeometry } from '../../generators/base-generator';
 import { buildTextGeometry, isItalic } from '../../generators/text-generator';
-import { createSpotifyGeometryFromSvg, fetchSpotifySvg, parseSpotifyUri } from '../../generators/spotify-generator';
+import { createSpotifyGeometryFromSvg, fetchSpotifySvg, parseSpotifyUri, type SpotifyGeometries } from '../../generators/spotify-generator';
 import { encodeBarcode, createBarcodeGeometry } from '../../generators/barcode-generator';
 import { loadImagePixels, createImageSilhouetteGeometry, type PixelGrid } from '../../generators/image-generator';
 import { createLithophaneGeometry } from '../../generators/lithophane-generator';
@@ -286,8 +286,12 @@ function SpotifyGeneratorGroup({ config }: { config: ModelConfig }) {
   const embossed = config.content.mode === 'embossed';
   const svgText = useSpotifySvg(config.spotify.url);
 
-  const geometry = useMemo(() => {
-    if (!svgText) return new THREE.BufferGeometry();
+  const geometries = useMemo((): SpotifyGeometries => {
+    const empty: SpotifyGeometries = {
+      bars: new THREE.BufferGeometry(),
+      logo: new THREE.BufferGeometry(),
+    };
+    if (!svgText) return empty;
     try {
       return createSpotifyGeometryFromSvg(
         svgText,
@@ -296,9 +300,10 @@ function SpotifyGeneratorGroup({ config }: { config: ModelConfig }) {
         config.base.borderWidth,
         config.content.contentHeight,
         config.spotify.showLogo,
+        embossed,
       );
     } catch {
-      return new THREE.BufferGeometry();
+      return empty;
     }
   }, [
     svgText,
@@ -307,13 +312,24 @@ function SpotifyGeneratorGroup({ config }: { config: ModelConfig }) {
     config.base.borderWidth,
     config.content.contentHeight,
     config.spotify.showLogo,
+    embossed,
   ]);
 
+  const z = contentZ(config.base, config.content, embossed);
+
   return (
-    <mesh position={[0, 0, contentZ(config.base, config.content, embossed)]} userData={{ part: 'content' }}>
-      <primitive object={geometry} attach="geometry" />
-      <meshStandardMaterial color={config.colors.content} roughness={0.3} metalness={0.2} />
-    </mesh>
+    <>
+      <mesh position={[0, 0, z]} userData={{ part: 'content' }}>
+        <primitive object={geometries.bars} attach="geometry" />
+        <meshStandardMaterial color={config.colors.content} roughness={0.3} metalness={0.2} />
+      </mesh>
+      {config.spotify.showLogo && (
+        <mesh position={[0, 0, z]} userData={{ part: 'logo' }}>
+          <primitive object={geometries.logo} attach="geometry" />
+          <meshStandardMaterial color={config.colors.logo} roughness={0.3} metalness={0.2} />
+        </mesh>
+      )}
+    </>
   );
 }
 

@@ -7,6 +7,11 @@ import { SVGLoader } from 'three-stdlib';
  * plus the Spotify logo. We parse it with SVGLoader and extrude the
  * vector shapes directly — no rasterization — so bars stay crisp and
  * the logo stays perfectly circular at any plate size.
+ *
+ * The generator returns two separate geometries (`bars` and `logo`)
+ * that share a common centroid/scale so they align when rendered as
+ * independent meshes. This lets the UI give them different colors and
+ * export them as separate STL parts.
  */
 
 const SCANNABLES_ENDPOINT = 'https://scannables.scdn.co/uri/plain/svg';
@@ -45,6 +50,11 @@ export async function fetchSpotifySvg(uri: string): Promise<string> {
   return response.text();
 }
 
+export interface SpotifyGeometries {
+  bars: THREE.BufferGeometry;
+  logo: THREE.BufferGeometry;
+}
+
 interface ShapeInfo {
   shape: THREE.Shape;
   minX: number;
@@ -69,12 +79,16 @@ function computeShapeBounds(shape: THREE.Shape): Omit<ShapeInfo, 'shape'> {
 }
 
 /**
- * Build a 3D geometry from a Spotify scannable SVG.
+ * Build 3D geometries from a Spotify scannable SVG.
  *
- * The merged geometry is centered at the origin and spans
- * `[-contentHeight/2, +contentHeight/2]` in Z, matching the convention
- * used by the other content generators (so the caller can position it
- * with `contentZ()` directly).
+ * Returns `{ bars, logo }` — two independent `BufferGeometry`s that
+ * share a common centroid and scale so they can be rendered as
+ * separate meshes and still align within the plate.
+ *
+ * Both geometries span `[0, contentHeight]` in Z for embossed mode
+ * and `[-contentHeight, 0]` for engraved mode, matching the convention
+ * used by `createImageSilhouetteGeometry`. The caller positions them
+ * with `contentZ()` from GeneratedModel.
  */
 export function createSpotifyGeometryFromSvg(
   svgText: string,
@@ -83,11 +97,17 @@ export function createSpotifyGeometryFromSvg(
   borderWidth: number,
   contentHeight: number,
   showLogo: boolean,
-): THREE.BufferGeometry {
+  embossed: boolean,
+): SpotifyGeometries {
+  const empty = (): SpotifyGeometries => ({
+    bars: new THREE.BufferGeometry(),
+    logo: new THREE.BufferGeometry(),
+  });
+
   const loader = new SVGLoader();
   const svgData = loader.parse(svgText);
 
-  // Gather shapes, skipping the pure-black background rect.
+  // Gather foreground shapes, skipping the pure-black background rect.
   const infos: ShapeInfo[] = [];
   for (const path of svgData.paths) {
     const hex = path.color.getHex();
@@ -99,7 +119,7 @@ export function createSpotifyGeometryFromSvg(
     }
   }
 
-  if (infos.length === 0) return new THREE.BufferGeometry();
+  if (infos.length === 0) return empty();
 
   // Overall foreground bounds (logo + bars).
   let fgMinX = Infinity;
@@ -110,16 +130,22 @@ export function createSpotifyGeometryFromSvg(
   }
   const fgW = fgMaxX - fgMinX;
 
-  // Optionally drop logo (shapes whose center-x sits in the leftmost ~22%).
-  let kept = infos;
-  if (!showLogo) {
-    const logoBand = fgMinX + fgW * 0.22;
-    kept = infos.filter((s) => (s.minX + s.maxX) / 2 > logoBand);
+  // Split shapes into logo (leftmost ~22% by centroid) vs bars.
+  const logoBand = fgMinX + fgW * 0.22;
+  const logoShapes: ShapeInfo[] = [];
+  const barShapes: ShapeInfo[] = [];
+  for (const s of infos) {
+    const cx = (s.minX + s.maxX) / 2;
+    if (cx <= logoBand) logoShapes.push(s);
+    else barShapes.push(s);
   }
 
-  if (kept.length === 0) return new THREE.BufferGeometry();
+  // The shapes we actually render (used for the shared plate-fit bounds).
+  const kept: ShapeInfo[] = showLogo ? infos : barShapes;
+  if (kept.length === 0) return empty();
 
-  // Recompute bounds of kept shapes (may exclude the logo area).
+  // Compute bounds of the kept set so bars and logo share the same
+  // centroid and fit-to-plate scale.
   let kMinX = Infinity;
   let kMaxX = -Infinity;
   let kMinY = Infinity;
@@ -135,35 +161,49 @@ export function createSpotifyGeometryFromSvg(
   const keptCx = (kMinX + kMaxX) / 2;
   const keptCy = (kMinY + kMaxY) / 2;
 
-  // Extrude every shape with smooth curves so the circle stays round.
+  const availW = plateWidth - borderWidth * 2;
+  const availH = plateHeight - borderWidth * 2;
+  const scale = Math.min(availW / keptW, availH / keptH);
+
   const extrudeSettings: THREE.ExtrudeGeometryOptions = {
     depth: contentHeight,
     bevelEnabled: false,
     steps: 1,
     curveSegments: 48,
   };
-  const extruded: THREE.BufferGeometry[] = [];
-  for (const s of kept) {
-    extruded.push(new THREE.ExtrudeGeometry(s.shape, extrudeSettings));
+
+  // Transform a group of shapes using the shared keptCx/Cy/scale so the
+  // logo and bars remain perfectly aligned inside the plate.
+  function extrudeGroup(group: ShapeInfo[]): THREE.BufferGeometry {
+    if (group.length === 0) return new THREE.BufferGeometry();
+
+    const parts: THREE.BufferGeometry[] = [];
+    for (const s of group) {
+      parts.push(new THREE.ExtrudeGeometry(s.shape, extrudeSettings));
+    }
+    const merged = mergeGeometries(parts);
+
+    // Shared normalization: SVG y-down → three y-up, center on kept
+    // centroid, then fit to plate.
+    merged.translate(-keptCx, -keptCy, 0);
+    merged.scale(1, -1, 1);
+    merged.scale(scale, scale, 1);
+
+    // ExtrudeGeometry spans [0, contentHeight] in Z. For engraved mode
+    // flip it below the XY plane so contentZ() from GeneratedModel
+    // positions it carving into the base.
+    if (!embossed) {
+      merged.translate(0, 0, -contentHeight);
+    }
+
+    merged.computeVertexNormals();
+    return merged;
   }
 
-  const merged = mergeGeometries(extruded);
-
-  // Normalize: center in XY, flip Y (SVG is y-down, three is y-up).
-  merged.translate(-keptCx, -keptCy, 0);
-  merged.scale(1, -1, 1);
-
-  // Fit to plate while preserving aspect ratio.
-  const availW = plateWidth - borderWidth * 2;
-  const availH = plateHeight - borderWidth * 2;
-  const scale = Math.min(availW / keptW, availH / keptH);
-  merged.scale(scale, scale, 1);
-
-  // Center Z span around 0 to match the other generators' convention.
-  merged.translate(0, 0, -contentHeight / 2);
-  merged.computeVertexNormals();
-
-  return merged;
+  return {
+    bars: extrudeGroup(barShapes),
+    logo: showLogo ? extrudeGroup(logoShapes) : new THREE.BufferGeometry(),
+  };
 }
 
 function mergeGeometries(geometries: THREE.BufferGeometry[]): THREE.BufferGeometry {
