@@ -1,9 +1,11 @@
+import { useState } from 'react';
 import { SectionHeader } from '../shared/SectionHeader';
 import { GeneratorTabs } from '../settings/GeneratorTabs';
 import { BaseSettings } from '../settings/BaseSettings';
 import { ModelSettings } from '../settings/ModelSettings';
 import { ExportSettings } from '../settings/ExportSettings';
 import { ColorSettings } from '../settings/ColorSettings';
+import { TemplatesPanel } from './TemplatesPanel';
 import {
   QRSettings,
   TextSettings,
@@ -20,6 +22,7 @@ import type {
   BaseConfig,
   ContentConfig,
   MagnetHoleConfig,
+  MountingConfig,
   ExportConfig,
   GeneratorType,
   TextConfig,
@@ -51,9 +54,16 @@ interface SidebarProps {
   onBarcodeChange: (u: Partial<BarcodeConfig>) => void;
   onNameplateChange: (u: Partial<NameplateConfig>) => void;
   onMagnetChange: (u: Partial<MagnetHoleConfig>) => void;
+  onMountingChange: (u: Partial<MountingConfig>) => void;
   onExportChange: (u: Partial<ExportConfig>) => void;
   onColorsChange: (u: Partial<ColorConfig>) => void;
   onExport: () => void;
+  onTemplateApply: (t: Partial<ModelConfig>) => void;
+  onUndo: () => void;
+  onRedo: () => void;
+  canUndo: boolean;
+  canRedo: boolean;
+  isExporting?: boolean;
 }
 
 const GENERATOR_LABELS: Record<GeneratorType, string> = {
@@ -68,7 +78,6 @@ const GENERATOR_LABELS: Record<GeneratorType, string> = {
   nameplate: 'Nameplate',
 };
 
-/** Icon: single column (one sidebar) */
 function IconSingle() {
   return (
     <svg viewBox="0 0 18 14" className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth={1.5}>
@@ -78,7 +87,6 @@ function IconSingle() {
   );
 }
 
-/** Icon: two columns (dual sidebar) */
 function IconDual() {
   return (
     <svg viewBox="0 0 20 14" className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth={1.5}>
@@ -91,110 +99,172 @@ function IconDual() {
 
 export function Sidebar(props: SidebarProps) {
   const {
-    config,
-    layout,
-    onLayoutChange,
-    onGeneratorChange,
-    onBaseChange,
-    onContentChange,
-    onTextChange,
-    onSpotifyChange,
-    onWifiChange,
-    onVCardChange,
-    onImageChange,
-    onLithophaneChange,
-    onBarcodeChange,
-    onNameplateChange,
-    onMagnetChange,
-    onExportChange,
-    onColorsChange,
-    onExport,
+    config, layout, onLayoutChange, onGeneratorChange,
+    onBaseChange, onContentChange, onTextChange, onSpotifyChange,
+    onWifiChange, onVCardChange, onImageChange, onLithophaneChange,
+    onBarcodeChange, onNameplateChange, onMagnetChange, onMountingChange,
+    onExportChange, onColorsChange, onExport, onTemplateApply,
+    onUndo, onRedo, canUndo, canRedo, isExporting,
   } = props;
+
+  const [showTemplates, setShowTemplates] = useState(false);
+  const [collapsed, setCollapsed] = useState(false);
 
   const isDual = layout === 'dual';
   const showBase = config.generator !== 'lithophane';
   const showModel = config.generator !== 'lithophane' && config.generator !== 'image';
 
+  if (collapsed) {
+    return (
+      <>
+        <aside className="w-10 min-w-10 h-full bg-gray-800 border-r border-gray-700 flex flex-col items-center py-3 gap-3">
+          <button
+            onClick={() => setCollapsed(false)}
+            title="Expand sidebar"
+            className="w-8 h-8 flex items-center justify-center rounded-md bg-gray-700 hover:bg-gray-600 text-gray-300 hover:text-white transition-colors"
+          >
+            <svg viewBox="0 0 16 16" className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth={1.5}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M6 3l5 5-5 5" />
+            </svg>
+          </button>
+        </aside>
+      </>
+    );
+  }
+
   return (
-    <aside className={`${isDual ? 'w-[300px] min-w-[300px]' : 'w-[380px] min-w-[380px]'} h-full bg-gray-800 border-r border-gray-700 flex flex-col overflow-hidden transition-all`}>
-      {/* Header */}
-      <div className="px-4 py-3 border-b border-gray-700 flex items-center justify-between">
-        <div>
-          <h1 className="text-base font-bold text-white tracking-tight">STL Generator</h1>
-          <p className="text-xs text-gray-400 mt-0.5">3D-printable STL files</p>
+    <>
+      {showTemplates && (
+        <TemplatesPanel onApply={onTemplateApply} onClose={() => setShowTemplates(false)} />
+      )}
+
+      <aside className={`${isDual ? 'w-[300px] min-w-[300px]' : 'w-[380px] min-w-[380px]'} h-full bg-gray-800 border-r border-gray-700 flex flex-col overflow-hidden transition-all`}>
+        {/* Header */}
+        <div className="px-4 py-3 border-b border-gray-700 flex items-center justify-between gap-2">
+          <div className="min-w-0">
+            <h1 className="text-base font-bold text-white tracking-tight">STL Generator</h1>
+            <p className="text-xs text-gray-400 mt-0.5 hidden sm:block">3D-printable STL files</p>
+          </div>
+          <div className="flex items-center gap-1 shrink-0">
+            {/* Undo / Redo */}
+            <button
+              onClick={onUndo}
+              disabled={!canUndo}
+              title="Undo"
+              className="w-7 h-7 flex items-center justify-center rounded text-gray-400 hover:text-white hover:bg-gray-700 disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
+            >
+              <svg viewBox="0 0 16 16" className="w-3.5 h-3.5" fill="none" stroke="currentColor" strokeWidth={1.8}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M3 7H10a3 3 0 010 6H7M3 7l3-3M3 7l3 3" />
+              </svg>
+            </button>
+            <button
+              onClick={onRedo}
+              disabled={!canRedo}
+              title="Redo"
+              className="w-7 h-7 flex items-center justify-center rounded text-gray-400 hover:text-white hover:bg-gray-700 disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
+            >
+              <svg viewBox="0 0 16 16" className="w-3.5 h-3.5" fill="none" stroke="currentColor" strokeWidth={1.8}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M13 7H6a3 3 0 000 6h3M13 7l-3-3M13 7l-3 3" />
+              </svg>
+            </button>
+            {/* Templates */}
+            <button
+              onClick={() => setShowTemplates(true)}
+              title="Templates"
+              className="w-7 h-7 flex items-center justify-center rounded text-gray-400 hover:text-white hover:bg-gray-700 transition-colors"
+            >
+              <svg viewBox="0 0 16 16" className="w-3.5 h-3.5" fill="none" stroke="currentColor" strokeWidth={1.8}>
+                <rect x="1" y="1" width="6" height="6" rx="1" />
+                <rect x="9" y="1" width="6" height="6" rx="1" />
+                <rect x="1" y="9" width="6" height="6" rx="1" />
+                <rect x="9" y="9" width="6" height="6" rx="1" />
+              </svg>
+            </button>
+            {/* Layout toggle */}
+            <button
+              onClick={() => onLayoutChange(isDual ? 'single' : 'dual')}
+              title={isDual ? 'Switch to single sidebar' : 'Switch to dual sidebar'}
+              className="w-7 h-7 flex items-center justify-center rounded text-gray-400 hover:text-white hover:bg-gray-700 transition-colors"
+            >
+              {isDual ? <IconSingle /> : <IconDual />}
+            </button>
+            {/* Collapse */}
+            <button
+              onClick={() => setCollapsed(true)}
+              title="Collapse sidebar"
+              className="w-7 h-7 flex items-center justify-center rounded text-gray-400 hover:text-white hover:bg-gray-700 transition-colors"
+            >
+              <svg viewBox="0 0 16 16" className="w-3.5 h-3.5" fill="none" stroke="currentColor" strokeWidth={1.8}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M10 3L5 8l5 5" />
+              </svg>
+            </button>
+          </div>
         </div>
-        {/* Layout toggle */}
-        <button
-          onClick={() => onLayoutChange(isDual ? 'single' : 'dual')}
-          title={isDual ? 'Switch to single sidebar' : 'Switch to dual sidebar'}
-          className="w-8 h-8 flex items-center justify-center rounded-md bg-gray-700 hover:bg-gray-600 text-gray-300 hover:text-white transition-colors"
-        >
-          {isDual ? <IconSingle /> : <IconDual />}
-        </button>
-      </div>
 
-      {/* Generator tabs */}
-      <div className="border-b border-gray-700 bg-gray-850">
-        <GeneratorTabs value={config.generator} onChange={onGeneratorChange} />
-      </div>
+        {/* Generator tabs */}
+        <div className="border-b border-gray-700 bg-gray-850">
+          <GeneratorTabs value={config.generator} onChange={onGeneratorChange} />
+        </div>
 
-      {/* Scrollable settings */}
-      <div className="flex-1 overflow-y-auto">
-        <SectionHeader title={GENERATOR_LABELS[config.generator]} defaultOpen>
-          {config.generator === 'qr' && <QRSettings content={config.content} onChange={onContentChange} />}
-          {config.generator === 'text' && <TextSettings config={config.text} onChange={onTextChange} />}
-          {config.generator === 'spotify' && <SpotifySettings config={config.spotify} onChange={onSpotifyChange} />}
-          {config.generator === 'wifi' && <WifiSettings config={config.wifi} onChange={onWifiChange} />}
-          {config.generator === 'vcard' && <VCardSettings config={config.vcard} onChange={onVCardChange} />}
-          {config.generator === 'image' && <ImageSettings config={config.image} onChange={onImageChange} />}
-          {config.generator === 'lithophane' && <LithophaneSettings config={config.lithophane} onChange={onLithophaneChange} />}
-          {config.generator === 'barcode' && <BarcodeSettings config={config.barcode} onChange={onBarcodeChange} />}
-          {config.generator === 'nameplate' && <NameplateSettings config={config.nameplate} onChange={onNameplateChange} />}
-        </SectionHeader>
+        {/* Scrollable settings */}
+        <div className="flex-1 overflow-y-auto">
+          <SectionHeader title={GENERATOR_LABELS[config.generator]} defaultOpen>
+            {config.generator === 'qr' && <QRSettings content={config.content} onChange={onContentChange} />}
+            {config.generator === 'text' && <TextSettings config={config.text} onChange={onTextChange} />}
+            {config.generator === 'spotify' && <SpotifySettings config={config.spotify} onChange={onSpotifyChange} />}
+            {config.generator === 'wifi' && <WifiSettings config={config.wifi} onChange={onWifiChange} />}
+            {config.generator === 'vcard' && <VCardSettings config={config.vcard} onChange={onVCardChange} />}
+            {config.generator === 'image' && <ImageSettings config={config.image} onChange={onImageChange} />}
+            {config.generator === 'lithophane' && <LithophaneSettings config={config.lithophane} onChange={onLithophaneChange} />}
+            {config.generator === 'barcode' && <BarcodeSettings config={config.barcode} onChange={onBarcodeChange} />}
+            {config.generator === 'nameplate' && <NameplateSettings config={config.nameplate} onChange={onNameplateChange} />}
+          </SectionHeader>
 
-        {/* In single-sidebar mode, also show base/model/colors/export here */}
-        {!isDual && (
-          <>
-            {showBase && (
-              <SectionHeader title="Base Plate" defaultOpen>
-                <BaseSettings base={config.base} onChange={onBaseChange} />
-              </SectionHeader>
-            )}
+          {!isDual && (
+            <>
+              {showBase && (
+                <SectionHeader title="Base Plate" defaultOpen>
+                  <BaseSettings base={config.base} onChange={onBaseChange} />
+                </SectionHeader>
+              )}
 
-            {showModel && (
-              <SectionHeader title="Model" defaultOpen>
-                <ModelSettings
-                  content={config.content}
-                  magnets={config.magnets}
-                  onContentChange={onContentChange}
-                  onMagnetChange={onMagnetChange}
+              {showModel && (
+                <SectionHeader title="Model" defaultOpen>
+                  <ModelSettings
+                    content={config.content}
+                    magnets={config.magnets}
+                    mounting={config.mounting}
+                    onContentChange={onContentChange}
+                    onMagnetChange={onMagnetChange}
+                    onMountingChange={onMountingChange}
+                  />
+                </SectionHeader>
+              )}
+
+              <SectionHeader title="Colors" defaultOpen={false}>
+                <ColorSettings
+                  colors={config.colors}
+                  generator={config.generator}
+                  onChange={onColorsChange}
                 />
               </SectionHeader>
-            )}
 
-            <SectionHeader title="Colors" defaultOpen={false}>
-              <ColorSettings
-                colors={config.colors}
-                generator={config.generator}
-                onChange={onColorsChange}
-              />
-            </SectionHeader>
+              <SectionHeader title="Export" defaultOpen>
+                <ExportSettings
+                  exportConfig={config.export}
+                  onChange={onExportChange}
+                  onExport={onExport}
+                  isExporting={isExporting}
+                />
+              </SectionHeader>
+            </>
+          )}
+        </div>
 
-            <SectionHeader title="Export" defaultOpen>
-              <ExportSettings
-                exportConfig={config.export}
-                onChange={onExportChange}
-                onExport={onExport}
-              />
-            </SectionHeader>
-          </>
-        )}
-      </div>
-
-      {/* Footer */}
-      <div className="px-4 py-2 border-t border-gray-700 text-xs text-gray-500">
-        All dimensions in millimeters
-      </div>
-    </aside>
+        <div className="px-4 py-2 border-t border-gray-700 text-xs text-gray-500">
+          All dimensions in millimeters
+        </div>
+      </aside>
+    </>
   );
 }

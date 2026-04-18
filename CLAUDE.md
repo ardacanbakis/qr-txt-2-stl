@@ -179,12 +179,12 @@ qr-txt-2-stl/
 - [x] Add QR/content height (protrusion) control
 - [x] Add border width control
 - [x] Implement embossed vs engraved toggle
-- [ ] Add edge treatment (fillet/chamfer) on base plate
+- [x] Add edge treatment (fillet/chamfer) on base plate
 
 ### Phase 4: Additional Input Types
 - [x] WiFi credential input (SSID, password, encryption type)
 - [x] vCard input (name, phone, email, address fields)
-- [x] Spotify link → real scannables.scdn.co SVG → rasterized geometry
+- [x] Spotify link → real scannables.scdn.co SVG → vector ExtrudeGeometry (separate logo + bars meshes, independent colors)
 - [x] Input type selector tabs/dropdown in sidebar (9-tab GeneratorTabs)
 - [x] Barcode (CODE 39) generator
 - [x] Image silhouette generator
@@ -196,7 +196,7 @@ qr-txt-2-stl/
 - [x] Text → 3D extruded geometry pipeline
 - [x] Font style selector (regular / bold / italic / bold-italic via shear matrix)
 - [x] Text size, letter spacing, and centering
-- [ ] Combined QR + text on same plate option
+- [x] Combined QR + text on same plate option
 
 ### Phase 6: Advanced Model Features
 - [x] Magnet hole geometry (visual indicator)
@@ -204,9 +204,9 @@ qr-txt-2-stl/
 - [x] Magnet hole position options (corners / edges / center)
 - [x] Keychain hole visual indicator in 3D preview
 - [x] Separate-parts STL export → ZIP bundle (pure JS zip builder)
-- [ ] Screw hole option
-- [ ] Wall mount bracket geometry
-- [ ] Fridge magnet recess option
+- [x] Screw hole visual indicators (corner cylinders)
+- [x] Wall mount bracket geometry (keyhole slot indicator)
+- [x] Fridge magnet recess option (back-face rectangle indicator)
 
 ### Phase 7: UX Polish
 - [x] Rename app to "STL Generator"
@@ -215,18 +215,18 @@ qr-txt-2-stl/
 - [x] Home/view preset buttons fix (reset OrbitControls target → no more wrong-angle home)
 - [x] Dual sidebar layout toggle (generator left / model params right)
 - [x] Slider inline number input (type exact value, Enter or blur to commit)
-- [ ] Responsive sidebar collapse for smaller screens
-- [ ] Loading states for STL export
-- [ ] Dimension annotation overlays on 3D preview
-- [ ] Preset templates (business card QR, WiFi sign, Spotify keychain, etc.)
-- [ ] Undo/redo for settings changes
+- [x] Responsive sidebar collapse (collapse/expand button in header)
+- [x] Loading states for STL export (spinner, disabled button)
+- [x] Dimension annotation overlay on 3D preview (pill bar at bottom of viewport)
+- [x] Preset templates (8 templates: business card, WiFi sign, Spotify keychain, name tag, barcode label, contact coin, fridge magnet, lithophane)
+- [x] Undo/redo for settings changes (50-step history, ⌘Z / ⌘⇧Z buttons in sidebar header)
 
 ### Phase 8: Firebase Integration
-- [ ] Set up Firebase project + config
-- [ ] Implement optional Firebase Auth (Google sign-in)
-- [ ] Save/load project configurations to Firestore
-- [ ] User dashboard for saved projects
-- [ ] Deploy to Firebase Hosting
+- [x] Set up Firebase project + config (env-variable driven, gracefully disabled if not configured)
+- [x] Implement optional Firebase Auth (Google sign-in via popup)
+- [x] Save/load project configurations to Firestore
+- [x] User dashboard for saved projects (modal with save/load/delete, overlaid on viewport)
+- [ ] Deploy to Firebase Hosting (run `firebase deploy` after configuring .env)
 
 ### Phase 9: Map STL Generation (Future)
 - [ ] Research map data sources (OpenStreetMap, Mapbox, elevation APIs)

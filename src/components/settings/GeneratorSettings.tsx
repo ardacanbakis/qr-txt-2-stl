@@ -112,6 +112,21 @@ export function QRSettings({
         options={ERROR_CORRECTION_OPTIONS}
         onChange={(v) => onChange({ errorCorrection: v as ErrorCorrectionLevel })}
       />
+      <Toggle
+        label="Add Text Label Below"
+        checked={content.showQrLabel}
+        onChange={(v) => onChange({ showQrLabel: v })}
+      />
+      {content.showQrLabel && (
+        <div className="flex flex-col gap-1">
+          <Label>Label Text</Label>
+          <TextInput
+            value={content.qrLabel}
+            onChange={(v) => onChange({ qrLabel: v })}
+            placeholder="Label..."
+          />
+        </div>
+      )}
     </div>
   );
 }

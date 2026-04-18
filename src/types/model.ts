@@ -31,6 +31,8 @@ export type BarcodeFormat = 'CODE39' | 'CODE128' | 'EAN13';
 
 export type WifiEncryption = 'WPA' | 'WEP' | 'nopass';
 
+export type EdgeTreatment = 'none' | 'fillet' | 'chamfer';
+
 export interface MagnetHoleConfig {
   enabled: boolean;
   size: MagnetSize;
@@ -43,8 +45,13 @@ export interface MagnetHoleConfig {
 export interface MountingConfig {
   screwHoles: boolean;
   screwDiameter: number;
+  screwCount: number;
   wallMount: boolean;
+  wallMountKeyholeWidth: number;
   fridgeMagnet: boolean;
+  fridgeMagnetWidth: number;
+  fridgeMagnetHeight: number;
+  fridgeMagnetDepth: number;
 }
 
 export interface BaseConfig {
@@ -56,6 +63,7 @@ export interface BaseConfig {
   borderWidth: number;
   keychainHole: boolean;
   keychainHoleDiameter: number;
+  edgeTreatment: EdgeTreatment;
   filletRadius: number;
 }
 
@@ -65,6 +73,8 @@ export interface ContentConfig {
   contentHeight: number;
   mode: ContentMode;
   errorCorrection: ErrorCorrectionLevel;
+  qrLabel: string;
+  showQrLabel: boolean;
 }
 
 export interface TextConfig {
@@ -171,7 +181,8 @@ export const DEFAULT_CONFIG: ModelConfig = {
     borderWidth: 3,
     keychainHole: false,
     keychainHoleDiameter: 4,
-    filletRadius: 0.5,
+    edgeTreatment: 'none',
+    filletRadius: 1,
   },
   content: {
     inputType: 'text',
@@ -179,6 +190,8 @@ export const DEFAULT_CONFIG: ModelConfig = {
     contentHeight: 1.5,
     mode: 'embossed',
     errorCorrection: 'M',
+    qrLabel: '',
+    showQrLabel: false,
   },
   text: {
     text: 'Hello',
@@ -245,8 +258,13 @@ export const DEFAULT_CONFIG: ModelConfig = {
   mounting: {
     screwHoles: false,
     screwDiameter: 3,
+    screwCount: 4,
     wallMount: false,
+    wallMountKeyholeWidth: 6,
     fridgeMagnet: false,
+    fridgeMagnetWidth: 20,
+    fridgeMagnetHeight: 5,
+    fridgeMagnetDepth: 1.5,
   },
   export: {
     separateParts: false,

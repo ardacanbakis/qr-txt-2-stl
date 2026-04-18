@@ -2,7 +2,13 @@ import { useMemo, useRef, useImperativeHandle, forwardRef, useEffect, useState }
 import * as THREE from 'three';
 import { useFont } from '@react-three/drei';
 import { generateQRMatrix, createQRGeometry, generateWifiString, generateVCardString } from '../../generators/qr-generator';
-import { createBasePlateGeometry, createKeychainHoleGeometry } from '../../generators/base-generator';
+import {
+  createBasePlateGeometry,
+  createKeychainHoleGeometry,
+  createScrewHoleGeometries,
+  createWallMountGeometry,
+  createFridgeMagnetGeometry,
+} from '../../generators/base-generator';
 import { buildTextGeometry, isItalic } from '../../generators/text-generator';
 import { createSpotifyGeometryFromSvg, fetchSpotifySvg, parseSpotifyUri, type SpotifyGeometries } from '../../generators/spotify-generator';
 import { encodeBarcode, createBarcodeGeometry } from '../../generators/barcode-generator';
@@ -46,8 +52,10 @@ function BaseMesh({ config }: { config: ModelConfig }) {
         config.base.height,
         config.base.thickness,
         config.base.cornerRadius,
+        config.base.edgeTreatment,
+        config.base.filletRadius,
       ),
-    [config.base.shape, config.base.width, config.base.height, config.base.thickness, config.base.cornerRadius],
+    [config.base.shape, config.base.width, config.base.height, config.base.thickness, config.base.cornerRadius, config.base.edgeTreatment, config.base.filletRadius],
   );
 
   return (
@@ -131,6 +139,56 @@ function MagnetHoles({ config }: { config: ModelConfig }) {
   );
 }
 
+// --- Mounting indicators (screw holes, wall mount, fridge magnet) ---
+
+function MountingIndicators({ config }: { config: ModelConfig }) {
+  const { mounting, base } = config;
+
+  const screwGeos = useMemo(() => {
+    if (!mounting.screwHoles) return [];
+    return createScrewHoleGeometries(
+      base.width, base.height, mounting.screwDiameter, base.thickness, mounting.screwCount,
+    );
+  }, [mounting.screwHoles, mounting.screwDiameter, mounting.screwCount, base.width, base.height, base.thickness]);
+
+  const wallGeo = useMemo(() => {
+    if (!mounting.wallMount) return null;
+    return createWallMountGeometry(base.height, mounting.wallMountKeyholeWidth, base.thickness);
+  }, [mounting.wallMount, mounting.wallMountKeyholeWidth, base.height, base.thickness]);
+
+  const fridgeGeo = useMemo(() => {
+    if (!mounting.fridgeMagnet) return null;
+    return createFridgeMagnetGeometry(
+      mounting.fridgeMagnetWidth, mounting.fridgeMagnetHeight, mounting.fridgeMagnetDepth, base.thickness,
+    );
+  }, [mounting.fridgeMagnet, mounting.fridgeMagnetWidth, mounting.fridgeMagnetHeight, mounting.fridgeMagnetDepth, base.thickness]);
+
+  const bz = baseZ(config.content);
+
+  return (
+    <>
+      {screwGeos.map((geo, i) => (
+        <mesh key={i} position={[0, 0, bz]} userData={{ part: 'ignore' }}>
+          <primitive object={geo} attach="geometry" />
+          <meshStandardMaterial color="#ff4444" roughness={0.5} transparent opacity={0.6} />
+        </mesh>
+      ))}
+      {wallGeo && (
+        <mesh position={[0, 0, bz]} userData={{ part: 'ignore' }}>
+          <primitive object={wallGeo} attach="geometry" />
+          <meshStandardMaterial color="#4488ff" roughness={0.5} transparent opacity={0.7} />
+        </mesh>
+      )}
+      {fridgeGeo && (
+        <mesh position={[0, 0, bz]} userData={{ part: 'ignore' }}>
+          <primitive object={fridgeGeo} attach="geometry" />
+          <meshStandardMaterial color="#44bbff" roughness={0.5} transparent opacity={0.7} />
+        </mesh>
+      )}
+    </>
+  );
+}
+
 // --- QR Generator ---
 
 function QRGeneratorGroup({ config }: { config: ModelConfig }) {
@@ -170,12 +228,30 @@ function QRGeneratorGroup({ config }: { config: ModelConfig }) {
   ]);
 
   const embossed = config.content.mode === 'embossed';
+  const labelBand = config.content.showQrLabel ? Math.min(config.base.height * 0.15, 9) : 0;
+  const availW = config.base.width - config.base.borderWidth * 2;
+  const z = contentZ(config.base, config.content, embossed);
 
   return (
-    <mesh position={[0, 0, contentZ(config.base, config.content, embossed)]} userData={{ part: 'content' }}>
-      <primitive object={geometry} attach="geometry" />
-      <meshStandardMaterial color={config.colors.content} roughness={0.3} metalness={0.2} />
-    </mesh>
+    <>
+      <mesh position={[0, labelBand / 2, z]} userData={{ part: 'content' }}>
+        <primitive object={geometry} attach="geometry" />
+        <meshStandardMaterial color={config.colors.content} roughness={0.3} metalness={0.2} />
+      </mesh>
+      {config.content.showQrLabel && config.content.qrLabel && (
+        <TextContent
+          text={config.content.qrLabel}
+          fontStyle="regular"
+          size={3.5}
+          depth={config.content.contentHeight}
+          maxWidth={availW}
+          maxHeight={labelBand * 0.75}
+          position={[0, -config.base.height / 2 + labelBand / 2 + config.base.borderWidth / 2, z]}
+          color={config.colors.text}
+          part="text"
+        />
+      )}
+    </>
   );
 }
 
@@ -641,6 +717,7 @@ export const GeneratedModel = forwardRef<GeneratedModelRef, GeneratedModelProps>
         <BaseMesh config={config} />
         <KeychainHoleMesh config={config} />
         <MagnetHoles config={config} />
+        <MountingIndicators config={config} />
 
         {config.generator === 'qr' && <QRGeneratorGroup config={config} />}
         {config.generator === 'text' && <TextGeneratorGroup config={config} />}

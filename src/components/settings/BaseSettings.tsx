@@ -1,4 +1,4 @@
-import type { BaseConfig, BaseShape } from '../../types/model';
+import type { BaseConfig, BaseShape, EdgeTreatment } from '../../types/model';
 import { Select } from '../shared/Select';
 import { Slider } from '../shared/Slider';
 import { Toggle } from '../shared/Toggle';
@@ -14,6 +14,12 @@ const SHAPE_OPTIONS = [
   { value: 'rounded-rectangle', label: 'Rounded Rectangle' },
   { value: 'circle', label: 'Circle' },
   { value: 'keychain', label: 'Keychain' },
+];
+
+const EDGE_OPTIONS = [
+  { value: 'none', label: 'None (sharp)' },
+  { value: 'fillet', label: 'Fillet (rounded)' },
+  { value: 'chamfer', label: 'Chamfer (angled)' },
 ];
 
 export function BaseSettings({ base, onChange }: BaseSettingsProps) {
@@ -74,6 +80,24 @@ export function BaseSettings({ base, onChange }: BaseSettingsProps) {
         step={0.5}
         onChange={v => onChange({ borderWidth: v })}
       />
+
+      <Select
+        label="Edge Treatment"
+        value={base.edgeTreatment}
+        options={EDGE_OPTIONS}
+        onChange={v => onChange({ edgeTreatment: v as EdgeTreatment })}
+      />
+
+      {base.edgeTreatment !== 'none' && (
+        <Slider
+          label={base.edgeTreatment === 'fillet' ? 'Fillet Radius' : 'Chamfer Size'}
+          value={base.filletRadius}
+          min={0.2}
+          max={3}
+          step={0.1}
+          onChange={v => onChange({ filletRadius: v })}
+        />
+      )}
 
       {base.shape !== 'keychain' && (
         <>

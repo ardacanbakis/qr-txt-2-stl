@@ -1,4 +1,11 @@
-import type { ContentConfig, ContentMode, MagnetHoleConfig, MagnetSize, MagnetPosition } from '../../types/model';
+import type {
+  ContentConfig,
+  ContentMode,
+  MagnetHoleConfig,
+  MagnetSize,
+  MagnetPosition,
+  MountingConfig,
+} from '../../types/model';
 import { Select } from '../shared/Select';
 import { Slider } from '../shared/Slider';
 import { Toggle } from '../shared/Toggle';
@@ -7,8 +14,10 @@ import { NumberInput } from '../shared/NumberInput';
 interface ModelSettingsProps {
   content: ContentConfig;
   magnets: MagnetHoleConfig;
+  mounting: MountingConfig;
   onContentChange: (updates: Partial<ContentConfig>) => void;
   onMagnetChange: (updates: Partial<MagnetHoleConfig>) => void;
+  onMountingChange: (updates: Partial<MountingConfig>) => void;
 }
 
 const MODE_OPTIONS = [
@@ -17,9 +26,9 @@ const MODE_OPTIONS = [
 ];
 
 const MAGNET_SIZE_OPTIONS = [
-  { value: '6x3', label: '6mm x 3mm' },
-  { value: '8x3', label: '8mm x 3mm' },
-  { value: '10x3', label: '10mm x 3mm' },
+  { value: '6x3', label: '6mm × 3mm' },
+  { value: '8x3', label: '8mm × 3mm' },
+  { value: '10x3', label: '10mm × 3mm' },
   { value: 'custom', label: 'Custom' },
 ];
 
@@ -35,7 +44,14 @@ const MAGNET_DIMENSIONS: Record<string, { diameter: number; depth: number }> = {
   '10x3': { diameter: 10, depth: 3 },
 };
 
-export function ModelSettings({ content, magnets, onContentChange, onMagnetChange }: ModelSettingsProps) {
+export function ModelSettings({
+  content,
+  magnets,
+  mounting,
+  onContentChange,
+  onMagnetChange,
+  onMountingChange,
+}: ModelSettingsProps) {
   return (
     <div className="space-y-3">
       <Select
@@ -54,7 +70,8 @@ export function ModelSettings({ content, magnets, onContentChange, onMagnetChang
         onChange={v => onContentChange({ contentHeight: v })}
       />
 
-      <div className="border-t border-gray-700 pt-3 mt-3">
+      {/* Magnet holes */}
+      <div className="border-t border-gray-700 pt-3 mt-1">
         <Toggle
           label="Magnet Holes"
           checked={magnets.enabled}
@@ -118,6 +135,88 @@ export function ModelSettings({ content, magnets, onContentChange, onMagnetChang
           )}
         </div>
       )}
+
+      {/* Mounting options */}
+      <div className="border-t border-gray-700 pt-3 mt-1 space-y-3">
+        <p className="text-xs text-gray-500 uppercase tracking-wider font-medium">Mounting</p>
+
+        <Toggle
+          label="Screw Holes"
+          checked={mounting.screwHoles}
+          onChange={v => onMountingChange({ screwHoles: v })}
+        />
+        {mounting.screwHoles && (
+          <div className="space-y-2 pl-1">
+            <NumberInput
+              label="Screw Diameter"
+              value={mounting.screwDiameter}
+              min={1.5}
+              max={6}
+              step={0.5}
+              onChange={v => onMountingChange({ screwDiameter: v })}
+            />
+            <NumberInput
+              label="Count"
+              value={mounting.screwCount}
+              min={1}
+              max={4}
+              onChange={v => onMountingChange({ screwCount: v })}
+            />
+          </div>
+        )}
+
+        <Toggle
+          label="Wall Mount Keyhole"
+          checked={mounting.wallMount}
+          onChange={v => onMountingChange({ wallMount: v })}
+        />
+        {mounting.wallMount && (
+          <div className="pl-1">
+            <NumberInput
+              label="Keyhole Width"
+              value={mounting.wallMountKeyholeWidth}
+              min={4}
+              max={12}
+              step={0.5}
+              onChange={v => onMountingChange({ wallMountKeyholeWidth: v })}
+            />
+          </div>
+        )}
+
+        <Toggle
+          label="Fridge Magnet Recess"
+          checked={mounting.fridgeMagnet}
+          onChange={v => onMountingChange({ fridgeMagnet: v })}
+        />
+        {mounting.fridgeMagnet && (
+          <div className="space-y-2 pl-1">
+            <NumberInput
+              label="Width"
+              value={mounting.fridgeMagnetWidth}
+              min={5}
+              max={50}
+              step={1}
+              onChange={v => onMountingChange({ fridgeMagnetWidth: v })}
+            />
+            <NumberInput
+              label="Height"
+              value={mounting.fridgeMagnetHeight}
+              min={2}
+              max={20}
+              step={0.5}
+              onChange={v => onMountingChange({ fridgeMagnetHeight: v })}
+            />
+            <NumberInput
+              label="Depth"
+              value={mounting.fridgeMagnetDepth}
+              min={0.5}
+              max={3}
+              step={0.1}
+              onChange={v => onMountingChange({ fridgeMagnetDepth: v })}
+            />
+          </div>
+        )}
+      </div>
     </div>
   );
 }
