@@ -56,9 +56,11 @@ export function RightPanel({
           <SectionHeader title="Model" defaultOpen>
             <ModelSettings
               content={config.content}
+              base={config.base}
               magnets={config.magnets}
               mounting={config.mounting}
               onContentChange={onContentChange}
+              onBaseChange={onBaseChange}
               onMagnetChange={onMagnetChange}
               onMountingChange={onMountingChange}
             />
@@ -73,7 +75,7 @@ export function RightPanel({
           />
         </SectionHeader>
 
-        <SectionHeader title="Export" defaultOpen>
+        <SectionHeader title="Export" defaultOpen={false}>
           <ExportSettings
             exportConfig={config.export}
             onChange={onExportChange}

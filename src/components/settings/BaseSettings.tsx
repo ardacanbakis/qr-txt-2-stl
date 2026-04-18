@@ -1,8 +1,6 @@
 import type { BaseConfig, BaseShape, EdgeTreatment } from '../../types/model';
 import { Select } from '../shared/Select';
 import { Slider } from '../shared/Slider';
-import { Toggle } from '../shared/Toggle';
-import { NumberInput } from '../shared/NumberInput';
 
 interface BaseSettingsProps {
   base: BaseConfig;
@@ -99,25 +97,6 @@ export function BaseSettings({ base, onChange }: BaseSettingsProps) {
         />
       )}
 
-      {base.shape !== 'keychain' && (
-        <>
-          <Toggle
-            label="Keychain Hole"
-            checked={base.keychainHole}
-            onChange={v => onChange({ keychainHole: v })}
-          />
-          {base.keychainHole && (
-            <NumberInput
-              label="Hole Diameter"
-              value={base.keychainHoleDiameter}
-              min={2}
-              max={10}
-              step={0.5}
-              onChange={v => onChange({ keychainHoleDiameter: v })}
-            />
-          )}
-        </>
-      )}
     </div>
   );
 }

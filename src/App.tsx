@@ -24,22 +24,6 @@ function getBaseName(config: ReturnType<typeof useModelConfig>['config']): strin
   return (raw || 'model').slice(0, 30).replace(/[^a-zA-Z0-9]+/g, '_') || 'model';
 }
 
-/** Thin dimension annotation bar shown at the bottom of the 3D viewport. */
-function DimensionOverlay({ config }: { config: ReturnType<typeof useModelConfig>['config'] }) {
-  if (config.generator === 'lithophane') return null;
-  const { width, height, thickness } = config.base;
-  const dim = config.base.shape === 'circle'
-    ? `⌀${width} mm  ×  ${thickness} mm thick`
-    : `${width} × ${height} × ${thickness} mm`;
-
-  return (
-    <div className="absolute bottom-2 left-1/2 -translate-x-1/2 pointer-events-none z-10">
-      <div className="bg-black/50 text-gray-300 text-xs font-mono px-3 py-1 rounded-full backdrop-blur-sm border border-white/10">
-        {dim}
-      </div>
-    </div>
-  );
-}
 
 function App() {
   const {
@@ -122,7 +106,6 @@ function App() {
 
       <main className="flex-1 h-full min-w-0 relative">
         <Preview3D ref={modelRef} config={config} onUndo={undo} onRedo={redo} canUndo={canUndo} canRedo={canRedo} />
-        <DimensionOverlay config={config} />
         {/* Firebase project save/load button — hidden when not configured */}
         <div className="absolute top-2 right-2 z-10">
           <FirebasePanel config={config} onLoad={applyTemplate} />

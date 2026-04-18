@@ -1,6 +1,7 @@
 import type {
   ContentConfig,
   ContentMode,
+  BaseConfig,
   MagnetHoleConfig,
   MagnetSize,
   MagnetPosition,
@@ -13,9 +14,11 @@ import { NumberInput } from '../shared/NumberInput';
 
 interface ModelSettingsProps {
   content: ContentConfig;
+  base: BaseConfig;
   magnets: MagnetHoleConfig;
   mounting: MountingConfig;
   onContentChange: (updates: Partial<ContentConfig>) => void;
+  onBaseChange: (updates: Partial<BaseConfig>) => void;
   onMagnetChange: (updates: Partial<MagnetHoleConfig>) => void;
   onMountingChange: (updates: Partial<MountingConfig>) => void;
 }
@@ -46,14 +49,17 @@ const MAGNET_DIMENSIONS: Record<string, { diameter: number; depth: number }> = {
 
 export function ModelSettings({
   content,
+  base,
   magnets,
   mounting,
   onContentChange,
+  onBaseChange,
   onMagnetChange,
   onMountingChange,
 }: ModelSettingsProps) {
   return (
     <div className="space-y-3">
+      {/* Content mode + height */}
       <Select
         label="Content Mode"
         value={content.mode}
@@ -70,76 +76,95 @@ export function ModelSettings({
         onChange={v => onContentChange({ contentHeight: v })}
       />
 
-      {/* Magnet holes */}
-      <div className="border-t border-gray-700 pt-3 mt-1">
+      {/* Mounting section */}
+      <div className="border-t border-gray-700 pt-3 mt-1 space-y-3">
+        <p className="text-xs text-gray-500 uppercase tracking-wider font-medium">Mounting</p>
+
+        {/* Keychain hole (only for non-keychain shapes) */}
+        {base.shape !== 'keychain' && (
+          <>
+            <Toggle
+              label="Keychain Hole"
+              checked={base.keychainHole}
+              onChange={v => onBaseChange({ keychainHole: v })}
+            />
+            {base.keychainHole && (
+              <div className="pl-1">
+                <NumberInput
+                  label="Hole Diameter"
+                  value={base.keychainHoleDiameter}
+                  min={2}
+                  max={10}
+                  step={0.5}
+                  onChange={v => onBaseChange({ keychainHoleDiameter: v })}
+                />
+              </div>
+            )}
+          </>
+        )}
+
+        {/* Magnet holes (moved into mounting) */}
         <Toggle
           label="Magnet Holes"
           checked={magnets.enabled}
           onChange={v => onMagnetChange({ enabled: v })}
         />
-      </div>
-
-      {magnets.enabled && (
-        <div className="space-y-3 pl-1">
-          <Select
-            label="Magnet Size"
-            value={magnets.size}
-            options={MAGNET_SIZE_OPTIONS}
-            onChange={v => {
-              const size = v as MagnetSize;
-              const dims = MAGNET_DIMENSIONS[size];
-              if (dims) {
-                onMagnetChange({ size, customDiameter: dims.diameter, customDepth: dims.depth });
-              } else {
-                onMagnetChange({ size });
-              }
-            }}
-          />
-
-          {magnets.size === 'custom' && (
-            <>
-              <NumberInput
-                label="Diameter"
-                value={magnets.customDiameter}
-                min={3}
-                max={20}
-                step={0.5}
-                onChange={v => onMagnetChange({ customDiameter: v })}
-              />
-              <NumberInput
-                label="Depth"
-                value={magnets.customDepth}
-                min={1}
-                max={10}
-                step={0.5}
-                onChange={v => onMagnetChange({ customDepth: v })}
-              />
-            </>
-          )}
-
-          <Select
-            label="Position"
-            value={magnets.position}
-            options={MAGNET_POSITION_OPTIONS}
-            onChange={v => onMagnetChange({ position: v as MagnetPosition })}
-          />
-
-          {magnets.position !== 'center' && (
-            <NumberInput
-              label="Count"
-              value={magnets.count}
-              min={1}
-              max={8}
-              onChange={v => onMagnetChange({ count: v })}
+        {magnets.enabled && (
+          <div className="space-y-2 pl-1">
+            <Select
+              label="Magnet Size"
+              value={magnets.size}
+              options={MAGNET_SIZE_OPTIONS}
+              onChange={v => {
+                const size = v as MagnetSize;
+                const dims = MAGNET_DIMENSIONS[size];
+                if (dims) {
+                  onMagnetChange({ size, customDiameter: dims.diameter, customDepth: dims.depth });
+                } else {
+                  onMagnetChange({ size });
+                }
+              }}
             />
-          )}
-        </div>
-      )}
+            {magnets.size === 'custom' && (
+              <>
+                <NumberInput
+                  label="Diameter"
+                  value={magnets.customDiameter}
+                  min={3}
+                  max={20}
+                  step={0.5}
+                  onChange={v => onMagnetChange({ customDiameter: v })}
+                />
+                <NumberInput
+                  label="Depth"
+                  value={magnets.customDepth}
+                  min={1}
+                  max={10}
+                  step={0.5}
+                  onChange={v => onMagnetChange({ customDepth: v })}
+                />
+              </>
+            )}
+            <Select
+              label="Position"
+              value={magnets.position}
+              options={MAGNET_POSITION_OPTIONS}
+              onChange={v => onMagnetChange({ position: v as MagnetPosition })}
+            />
+            {magnets.position !== 'center' && (
+              <NumberInput
+                label="Count"
+                value={magnets.count}
+                min={1}
+                max={8}
+                unit=""
+                onChange={v => onMagnetChange({ count: v })}
+              />
+            )}
+          </div>
+        )}
 
-      {/* Mounting options */}
-      <div className="border-t border-gray-700 pt-3 mt-1 space-y-3">
-        <p className="text-xs text-gray-500 uppercase tracking-wider font-medium">Mounting</p>
-
+        {/* Screw holes */}
         <Toggle
           label="Screw Holes"
           checked={mounting.screwHoles}
@@ -160,11 +185,13 @@ export function ModelSettings({
               value={mounting.screwCount}
               min={1}
               max={4}
+              unit=""
               onChange={v => onMountingChange({ screwCount: v })}
             />
           </div>
         )}
 
+        {/* Wall mount keyhole */}
         <Toggle
           label="Wall Mount Keyhole"
           checked={mounting.wallMount}
@@ -183,6 +210,7 @@ export function ModelSettings({
           </div>
         )}
 
+        {/* Fridge magnet recess */}
         <Toggle
           label="Fridge Magnet Recess"
           checked={mounting.fridgeMagnet}

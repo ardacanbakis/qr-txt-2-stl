@@ -187,7 +187,7 @@ export const DEFAULT_CONFIG: ModelConfig = {
   content: {
     inputType: 'text',
     text: 'Hello World',
-    contentHeight: 1.5,
+    contentHeight: 2,
     mode: 'embossed',
     errorCorrection: 'M',
     qrLabel: '',

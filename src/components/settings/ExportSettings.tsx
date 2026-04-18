@@ -1,5 +1,4 @@
-import type { ExportConfig, ExportQuality } from '../../types/model';
-import { Select } from '../shared/Select';
+import type { ExportConfig } from '../../types/model';
 import { Toggle } from '../shared/Toggle';
 
 interface ExportSettingsProps {
@@ -9,22 +8,10 @@ interface ExportSettingsProps {
   isExporting?: boolean;
 }
 
-const QUALITY_OPTIONS = [
-  { value: 'low', label: 'Low (faster)' },
-  { value: 'medium', label: 'Medium' },
-  { value: 'high', label: 'High (detailed)' },
-];
 
 export function ExportSettings({ exportConfig, onChange, onExport, isExporting = false }: ExportSettingsProps) {
   return (
     <div className="space-y-3">
-      <Select
-        label="Quality"
-        value={exportConfig.quality}
-        options={QUALITY_OPTIONS}
-        onChange={v => onChange({ quality: v as ExportQuality })}
-      />
-
       <Toggle
         label="Separate Parts (multi-color)"
         checked={exportConfig.separateParts}

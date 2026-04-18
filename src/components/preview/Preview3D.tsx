@@ -322,13 +322,13 @@ export const Preview3D = forwardRef<GeneratedModelRef, Preview3DProps>(({ config
         canRedo={canRedo}
       />
 
-      {/* Dimensions - top right */}
-      <div className={`absolute top-3 right-3 text-xs px-3 py-2 rounded font-mono space-y-0.5 ${
-        darkMode ? 'text-gray-400 bg-gray-900/80' : 'text-gray-500 bg-white/80 border border-gray-200'
+      {/* Dimensions - bottom left */}
+      <div className={`absolute bottom-3 left-3 text-[10px] px-2.5 py-1.5 rounded font-mono space-y-0.5 ${
+        darkMode ? 'text-gray-400 bg-gray-900/75 backdrop-blur-sm' : 'text-gray-500 bg-white/80 border border-gray-200 backdrop-blur-sm'
       }`}>
-        <div>{config.base.width} x {config.base.height} x {config.base.thickness}mm</div>
+        <div>{config.base.width} × {config.base.height} × {config.base.thickness}mm</div>
         <div>Content: {config.content.contentHeight}mm ({config.content.mode})</div>
-        <div className="text-[10px] opacity-70">{buildPlate.name} ({buildPlate.width}x{buildPlate.height})</div>
+        <div className="opacity-60">{buildPlate.name} ({buildPlate.width}×{buildPlate.height})</div>
       </div>
     </div>
   );
