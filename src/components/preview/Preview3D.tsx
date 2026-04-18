@@ -198,9 +198,13 @@ function SceneController({
 
 interface Preview3DProps {
   config: ModelConfig;
+  onUndo: () => void;
+  onRedo: () => void;
+  canUndo: boolean;
+  canRedo: boolean;
 }
 
-export const Preview3D = forwardRef<GeneratedModelRef, Preview3DProps>(({ config }, ref) => {
+export const Preview3D = forwardRef<GeneratedModelRef, Preview3DProps>(({ config, onUndo, onRedo, canUndo, canRedo }, ref) => {
   const [showGrid, setShowGrid] = useState(true);
   const [darkMode, setDarkMode] = useState(true);
   const [isFullscreen, setIsFullscreen] = useState(false);
@@ -304,7 +308,7 @@ export const Preview3D = forwardRef<GeneratedModelRef, Preview3DProps>(({ config
         buildPlateIndex={buildPlateIndex}
         buildPlates={BUILD_PLATES}
         onViewChange={(view) => sendCommand(view)}
-        onHome={() => sendCommand('home')}
+        onHome={() => sendCommand('top')}
         onFit={() => sendCommand('fit')}
         onZoomIn={() => sendCommand('zoomIn')}
         onZoomOut={() => sendCommand('zoomOut')}
@@ -312,6 +316,10 @@ export const Preview3D = forwardRef<GeneratedModelRef, Preview3DProps>(({ config
         onToggleDarkMode={() => setDarkMode((v) => !v)}
         onToggleFullscreen={toggleFullscreen}
         onBuildPlateChange={setBuildPlateIndex}
+        onUndo={onUndo}
+        onRedo={onRedo}
+        canUndo={canUndo}
+        canRedo={canRedo}
       />
 
       {/* Dimensions - top right */}

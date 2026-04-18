@@ -15,6 +15,10 @@ interface ViewToolbarProps {
   onToggleDarkMode: () => void;
   onToggleFullscreen: () => void;
   onBuildPlateChange: (index: number) => void;
+  onUndo: () => void;
+  onRedo: () => void;
+  canUndo: boolean;
+  canRedo: boolean;
 }
 
 export function ViewToolbar({
@@ -32,6 +36,10 @@ export function ViewToolbar({
   onToggleDarkMode,
   onToggleFullscreen,
   onBuildPlateChange,
+  onUndo,
+  onRedo,
+  canUndo,
+  canRedo,
 }: ViewToolbarProps) {
   const base = darkMode
     ? 'bg-gray-900/85 border border-gray-700/60 text-gray-300 hover:bg-gray-700/80 hover:text-white backdrop-blur-sm'
@@ -155,6 +163,32 @@ export function ViewToolbar({
         <span className={`text-[10px] ${darkMode ? 'text-gray-500' : 'text-gray-400'} whitespace-nowrap`}>
           {buildPlates[buildPlateIndex].width}×{buildPlates[buildPlateIndex].height}mm
         </span>
+      </div>
+
+      {/* Undo / Redo */}
+      <div className={`flex items-center gap-0.5 px-1.5 py-1 rounded-lg ${darkMode ? 'bg-gray-900/85 border border-gray-700/60 backdrop-blur-sm' : 'bg-white/85 border border-gray-200 backdrop-blur-sm'}`}>
+        <button
+          className={iconBtn()}
+          onClick={onUndo}
+          disabled={!canUndo}
+          title="Undo"
+          style={{ opacity: canUndo ? 1 : 0.35, cursor: canUndo ? 'pointer' : 'not-allowed' }}
+        >
+          <svg viewBox="0 0 16 16" className="w-3.5 h-3.5" fill="none" stroke="currentColor" strokeWidth={1.8}>
+            <path strokeLinecap="round" strokeLinejoin="round" d="M3 7H10a3 3 0 010 6H7M3 7l3-3M3 7l3 3" />
+          </svg>
+        </button>
+        <button
+          className={iconBtn()}
+          onClick={onRedo}
+          disabled={!canRedo}
+          title="Redo"
+          style={{ opacity: canRedo ? 1 : 0.35, cursor: canRedo ? 'pointer' : 'not-allowed' }}
+        >
+          <svg viewBox="0 0 16 16" className="w-3.5 h-3.5" fill="none" stroke="currentColor" strokeWidth={1.8}>
+            <path strokeLinecap="round" strokeLinejoin="round" d="M13 7H6a3 3 0 000 6h3M13 7l-3-3M13 7l-3 3" />
+          </svg>
+        </button>
       </div>
 
       {/* suppress unused var warning for sep */}

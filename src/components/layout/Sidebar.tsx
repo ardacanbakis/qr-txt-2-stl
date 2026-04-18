@@ -59,10 +59,6 @@ interface SidebarProps {
   onColorsChange: (u: Partial<ColorConfig>) => void;
   onExport: () => void;
   onTemplateApply: (t: Partial<ModelConfig>) => void;
-  onUndo: () => void;
-  onRedo: () => void;
-  canUndo: boolean;
-  canRedo: boolean;
   isExporting?: boolean;
 }
 
@@ -104,7 +100,7 @@ export function Sidebar(props: SidebarProps) {
     onWifiChange, onVCardChange, onImageChange, onLithophaneChange,
     onBarcodeChange, onNameplateChange, onMagnetChange, onMountingChange,
     onExportChange, onColorsChange, onExport, onTemplateApply,
-    onUndo, onRedo, canUndo, canRedo, isExporting,
+    isExporting,
   } = props;
 
   const [showTemplates, setShowTemplates] = useState(false);
@@ -146,27 +142,6 @@ export function Sidebar(props: SidebarProps) {
             <p className="text-xs text-gray-400 mt-0.5 hidden sm:block">3D-printable STL files</p>
           </div>
           <div className="flex items-center gap-1 shrink-0">
-            {/* Undo / Redo */}
-            <button
-              onClick={onUndo}
-              disabled={!canUndo}
-              title="Undo"
-              className="w-7 h-7 flex items-center justify-center rounded text-gray-400 hover:text-white hover:bg-gray-700 disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
-            >
-              <svg viewBox="0 0 16 16" className="w-3.5 h-3.5" fill="none" stroke="currentColor" strokeWidth={1.8}>
-                <path strokeLinecap="round" strokeLinejoin="round" d="M3 7H10a3 3 0 010 6H7M3 7l3-3M3 7l3 3" />
-              </svg>
-            </button>
-            <button
-              onClick={onRedo}
-              disabled={!canRedo}
-              title="Redo"
-              className="w-7 h-7 flex items-center justify-center rounded text-gray-400 hover:text-white hover:bg-gray-700 disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
-            >
-              <svg viewBox="0 0 16 16" className="w-3.5 h-3.5" fill="none" stroke="currentColor" strokeWidth={1.8}>
-                <path strokeLinecap="round" strokeLinejoin="round" d="M13 7H6a3 3 0 000 6h3M13 7l-3-3M13 7l-3 3" />
-              </svg>
-            </button>
             {/* Templates */}
             <button
               onClick={() => setShowTemplates(true)}

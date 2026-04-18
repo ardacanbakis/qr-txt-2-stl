@@ -118,14 +118,10 @@ function App() {
         layout={layout}
         onLayoutChange={setLayout}
         onTemplateApply={applyTemplate}
-        onUndo={undo}
-        onRedo={redo}
-        canUndo={canUndo}
-        canRedo={canRedo}
       />
 
       <main className="flex-1 h-full min-w-0 relative">
-        <Preview3D ref={modelRef} config={config} />
+        <Preview3D ref={modelRef} config={config} onUndo={undo} onRedo={redo} canUndo={canUndo} canRedo={canRedo} />
         <DimensionOverlay config={config} />
         {/* Firebase project save/load button — hidden when not configured */}
         <div className="absolute top-2 right-2 z-10">
