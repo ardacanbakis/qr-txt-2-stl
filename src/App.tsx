@@ -3,6 +3,7 @@ import { Sidebar } from './components/layout/Sidebar';
 import { RightPanel } from './components/layout/RightPanel';
 import { Preview3D } from './components/preview/Preview3D';
 import { FirebasePanel } from './components/layout/FirebasePanel';
+import { WelcomeScreen, useWelcomeScreen } from './components/layout/WelcomeScreen';
 import { useModelConfig } from './hooks/useModelConfig';
 import { exportSTL, exportSeparateParts } from './generators/stl-exporter';
 import type { GeneratedModelRef } from './components/preview/GeneratedModel';
@@ -53,6 +54,7 @@ function App() {
   const modelRef = useRef<GeneratedModelRef>(null);
   const [layout, setLayout] = useState<LayoutMode>('single');
   const [isExporting, setIsExporting] = useState(false);
+  const { showWelcome, dismiss: dismissWelcome } = useWelcomeScreen();
 
   const handleExport = useCallback(() => {
     const scene = modelRef.current?.getScene();
@@ -94,6 +96,10 @@ function App() {
     onExport: handleExport,
     isExporting,
   };
+
+  if (showWelcome) {
+    return <WelcomeScreen onDismiss={dismissWelcome} />;
+  }
 
   return (
     <div className="flex h-screen w-screen bg-gray-900 text-gray-100 overflow-hidden">
