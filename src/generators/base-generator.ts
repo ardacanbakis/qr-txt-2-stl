@@ -121,7 +121,7 @@ function createKeychainBase(
   filletRadius: number,
 ): THREE.BufferGeometry {
   const tabRadius = 6;
-  const tabHeight = tabRadius * 2 + 2;
+  const tabHeight = tabRadius * 2;
 
   const shape = new THREE.Shape();
   const w = width / 2;
@@ -134,41 +134,63 @@ function createKeychainBase(
   shape.lineTo(w, h - r);
   shape.quadraticCurveTo(w, h, w - r, h);
 
-  const tabW = tabRadius + 2;
-  shape.lineTo(tabW, h);
-  shape.lineTo(tabW, h + tabHeight - tabRadius);
-  shape.arc(0, 0, tabRadius, 0, Math.PI, false);
-  shape.lineTo(-tabW, h + tabHeight - tabRadius);
-  shape.lineTo(-tabW, h);
+  // Tab: rectangular stem + semicircular cap, centered at x=0
+  const tabArcCenterY = h + tabRadius; // arc center above plate
+  shape.lineTo(tabRadius, h);
+  shape.lineTo(tabRadius, tabArcCenterY);
+  shape.absarc(0, tabArcCenterY, tabRadius, 0, Math.PI, false); // centered at x=0
+  shape.lineTo(-tabRadius, h);
 
   shape.lineTo(-w + r, h);
   shape.quadraticCurveTo(-w, h, -w, h - r);
   shape.lineTo(-w, -h + r);
   shape.quadraticCurveTo(-w, -h, -w + r, -h);
 
+  // Hole punched through tab cap center
+  const holeR = tabRadius - 2;
   const holePath = new THREE.Path();
-  const holeY = h + tabHeight - tabRadius;
-  holePath.absarc(0, holeY, tabRadius - 2, 0, Math.PI * 2, false);
+  holePath.absarc(0, tabArcCenterY, holeR, 0, Math.PI * 2, false);
   shape.holes.push(holePath);
 
   const bevel = bevelOpts(edgeTreatment, filletRadius, thickness);
   const depth = bevel.bevelEnabled ? Math.max(0.1, thickness - bevel.bevelThickness * 2) : thickness;
-  const geometry = new THREE.ExtrudeGeometry(shape, { depth, ...bevel });
+  const geometry = new THREE.ExtrudeGeometry(shape, { depth, ...bevel, curveSegments: 32 });
   geometry.translate(0, -tabHeight / 2, 0);
   return centerZ(geometry);
 }
 
-export function createKeychainHoleGeometry(
-  _width: number,
-  height: number,
+/** Standalone keychain tab with punched hole for non-keychain base shapes. */
+export function createKeychainTabGeometry(
+  plateHeight: number,
   holeDiameter: number,
   thickness: number,
 ): THREE.BufferGeometry {
-  const radius = holeDiameter / 2;
-  const holeGeo = new THREE.CylinderGeometry(radius, radius, thickness + 2, 32);
-  holeGeo.rotateX(Math.PI / 2);
-  holeGeo.translate(0, height / 2 + radius + 2, 0);
-  return holeGeo;
+  const holeR = Math.max(1.5, holeDiameter / 2);
+  const tabRadius = holeR + 2; // 2mm wall around hole
+  const tabCenterY = tabRadius; // arc center height above plate edge
+
+  const shape = new THREE.Shape();
+  shape.moveTo(-tabRadius, 0);
+  shape.lineTo(tabRadius, 0);
+  shape.lineTo(tabRadius, tabCenterY);
+  shape.absarc(0, tabCenterY, tabRadius, 0, Math.PI, false);
+  shape.lineTo(-tabRadius, 0);
+
+  const hole = new THREE.Path();
+  hole.absarc(0, tabCenterY, holeR, 0, Math.PI * 2, false);
+  shape.holes.push(hole);
+
+  const geo = new THREE.ExtrudeGeometry(shape, {
+    depth: thickness,
+    bevelEnabled: false,
+    curveSegments: 32,
+  });
+
+  geo.translate(0, plateHeight / 2, 0);
+  geo.computeBoundingBox();
+  const bb = geo.boundingBox!;
+  geo.translate(0, 0, -((bb.max.z + bb.min.z) / 2));
+  return geo;
 }
 
 /** Visual indicator cylinders for screw holes (one per corner position). */

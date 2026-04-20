@@ -4,7 +4,7 @@ import { useFont } from '@react-three/drei';
 import { generateQRMatrix, createQRGeometry, generateWifiString, generateVCardString } from '../../generators/qr-generator';
 import {
   createBasePlateGeometry,
-  createKeychainHoleGeometry,
+  createKeychainTabGeometry,
   createScrewHoleGeometries,
   createWallMountGeometry,
   createFridgeMagnetGeometry,
@@ -70,25 +70,24 @@ function BaseMesh({ config }: { config: ModelConfig }) {
   );
 }
 
-// --- Keychain hole (visual indicator — same color as base, shows where hole will print) ---
+// --- Keychain tab for non-keychain shapes (physical tab with hole, same color as base) ---
 
-function KeychainHoleMesh({ config }: { config: ModelConfig }) {
+function KeychainTabMesh({ config }: { config: ModelConfig }) {
   const geometry = useMemo(() => {
     if (!config.base.keychainHole) return null;
-    return createKeychainHoleGeometry(
-      config.base.width,
+    return createKeychainTabGeometry(
       config.base.height,
       config.base.keychainHoleDiameter,
       config.base.thickness,
     );
-  }, [config.base.keychainHole, config.base.width, config.base.height, config.base.keychainHoleDiameter, config.base.thickness]);
+  }, [config.base.keychainHole, config.base.height, config.base.keychainHoleDiameter, config.base.thickness]);
 
   if (!geometry) return null;
 
   return (
-    <mesh position={[0, 0, baseZ(config.content)]} userData={{ part: 'ignore' }}>
+    <mesh position={[0, 0, baseZ(config.content)]} userData={{ part: 'base' }}>
       <primitive object={geometry} attach="geometry" />
-      <meshStandardMaterial color="#ff4444" roughness={0.5} transparent opacity={0.6} />
+      <meshStandardMaterial color={config.colors.base} roughness={0.4} metalness={0.1} />
     </mesh>
   );
 }
@@ -715,7 +714,7 @@ export const GeneratedModel = forwardRef<GeneratedModelRef, GeneratedModelProps>
     return (
       <group ref={groupRef}>
         <BaseMesh config={config} />
-        <KeychainHoleMesh config={config} />
+        <KeychainTabMesh config={config} />
         <MagnetHoles config={config} />
         <MountingIndicators config={config} />
 
