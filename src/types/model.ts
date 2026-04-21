@@ -61,6 +61,8 @@ export interface BaseConfig {
   thickness: number;
   cornerRadius: number;
   borderWidth: number;
+  borderEnabled: boolean;
+  borderHeight: number;
   keychainHole: boolean;
   keychainHoleDiameter: number;
   edgeTreatment: EdgeTreatment;
@@ -146,6 +148,7 @@ export interface ExportConfig {
 
 export interface ColorConfig {
   base: string;
+  border: string;
   content: string;
   text: string;
   secondary: string;
@@ -179,6 +182,8 @@ export const DEFAULT_CONFIG: ModelConfig = {
     thickness: 3,
     cornerRadius: 3,
     borderWidth: 3,
+    borderEnabled: true,
+    borderHeight: 2,
     keychainHole: false,
     keychainHoleDiameter: 4,
     edgeTreatment: 'none',
@@ -272,6 +277,7 @@ export const DEFAULT_CONFIG: ModelConfig = {
   },
   colors: {
     base: '#e6e6ea',
+    border: '#e6e6ea',
     content: '#000000',
     text: '#000000',
     secondary: '#333333',

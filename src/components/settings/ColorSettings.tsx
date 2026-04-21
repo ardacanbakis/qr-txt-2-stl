@@ -43,19 +43,20 @@ function ColorRow({ label, value, onChange }: ColorRowProps) {
  * to the current template so the panel stays focused.
  */
 const COLOR_SLOTS: Record<GeneratorType, Array<keyof ColorConfig>> = {
-  qr:         ['base', 'content'],
-  text:       ['base', 'text'],
-  spotify:    ['base', 'content', 'logo'],
-  wifi:       ['base', 'content', 'text'],
-  vcard:      ['base', 'content', 'text'],
-  image:      ['base', 'content'],
+  qr:         ['base', 'border', 'content'],
+  text:       ['base', 'border', 'text'],
+  spotify:    ['base', 'border', 'content', 'logo'],
+  wifi:       ['base', 'border', 'content', 'text'],
+  vcard:      ['base', 'border', 'content', 'text'],
+  image:      ['base', 'border', 'content'],
   lithophane: ['base'],
-  barcode:    ['base', 'content', 'text'],
-  nameplate:  ['base', 'text', 'secondary'],
+  barcode:    ['base', 'border', 'content', 'text'],
+  nameplate:  ['base', 'border', 'text', 'secondary'],
 };
 
 const LABELS: Record<keyof ColorConfig, string> = {
   base: 'Base Plate',
+  border: 'Border',
   content: 'Content',
   text: 'Text',
   secondary: 'Secondary Text',

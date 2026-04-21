@@ -5,6 +5,7 @@ import { generateQRMatrix, createQRGeometry, generateWifiString, generateVCardSt
 import {
   createBasePlateGeometry,
   createKeychainTabGeometry,
+  createBorderFrameGeometry,
   createScrewHoleGeometries,
   createWallMountGeometry,
   createFridgeMagnetGeometry,
@@ -88,6 +89,41 @@ function KeychainTabMesh({ config }: { config: ModelConfig }) {
     <mesh position={[0, 0, baseZ(config.content)]} userData={{ part: 'base' }}>
       <primitive object={geometry} attach="geometry" />
       <meshStandardMaterial color={config.colors.base} roughness={0.4} metalness={0.1} />
+    </mesh>
+  );
+}
+
+// --- Border frame (raised border on top of base) ---
+
+function BorderFrameMesh({ config }: { config: ModelConfig }) {
+  const geometry = useMemo(() => {
+    if (!config.base.borderEnabled || config.base.borderWidth <= 0) return null;
+    return createBorderFrameGeometry(
+      config.base.shape,
+      config.base.width,
+      config.base.height,
+      config.base.borderWidth,
+      config.base.borderHeight,
+      config.base.cornerRadius,
+    );
+  }, [
+    config.base.borderEnabled,
+    config.base.shape,
+    config.base.width,
+    config.base.height,
+    config.base.borderWidth,
+    config.base.borderHeight,
+    config.base.cornerRadius,
+  ]);
+
+  if (!geometry) return null;
+
+  const z = baseZ(config.content) + config.base.thickness / 2 + config.base.borderHeight / 2;
+
+  return (
+    <mesh position={[0, 0, z]} userData={{ part: 'border' }}>
+      <primitive object={geometry} attach="geometry" />
+      <meshStandardMaterial color={config.colors.border} roughness={0.4} metalness={0.1} />
     </mesh>
   );
 }
@@ -714,6 +750,7 @@ export const GeneratedModel = forwardRef<GeneratedModelRef, GeneratedModelProps>
     return (
       <group ref={groupRef}>
         <BaseMesh config={config} />
+        <BorderFrameMesh config={config} />
         <KeychainTabMesh config={config} />
         <MagnetHoles config={config} />
         <MountingIndicators config={config} />

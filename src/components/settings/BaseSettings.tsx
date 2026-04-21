@@ -1,6 +1,7 @@
 import type { BaseConfig, BaseShape, EdgeTreatment } from '../../types/model';
 import { Select } from '../shared/Select';
 import { Slider } from '../shared/Slider';
+import { Toggle } from '../shared/Toggle';
 
 interface BaseSettingsProps {
   base: BaseConfig;
@@ -70,6 +71,12 @@ export function BaseSettings({ base, onChange }: BaseSettingsProps) {
         />
       )}
 
+      <Toggle
+        label="Border Frame"
+        checked={base.borderEnabled}
+        onChange={v => onChange({ borderEnabled: v })}
+      />
+
       <Slider
         label="Border Width"
         value={base.borderWidth}
@@ -78,6 +85,17 @@ export function BaseSettings({ base, onChange }: BaseSettingsProps) {
         step={0.5}
         onChange={v => onChange({ borderWidth: v })}
       />
+
+      {base.borderEnabled && (
+        <Slider
+          label="Border Height"
+          value={base.borderHeight}
+          min={0.5}
+          max={5}
+          step={0.1}
+          onChange={v => onChange({ borderHeight: v })}
+        />
+      )}
 
       <Select
         label="Edge Treatment"

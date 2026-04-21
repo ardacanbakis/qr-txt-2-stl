@@ -255,6 +255,76 @@ export function createFridgeMagnetGeometry(
   return geo;
 }
 
+/** Physical raised border frame on top of the base plate. */
+export function createBorderFrameGeometry(
+  shape: BaseShape,
+  width: number,
+  height: number,
+  borderWidth: number,
+  borderHeight: number,
+  cornerRadius: number,
+): THREE.BufferGeometry {
+  const outer = createOutlineShape(shape, width, height, cornerRadius);
+  const inner = createOutlineShape(
+    shape,
+    width - borderWidth * 2,
+    height - borderWidth * 2,
+    Math.max(0, cornerRadius - borderWidth),
+  );
+
+  const hole = new THREE.Path();
+  const pts = inner.getPoints(64);
+  hole.setFromPoints(pts);
+  outer.holes.push(hole);
+
+  const geo = new THREE.ExtrudeGeometry(outer, {
+    depth: borderHeight,
+    bevelEnabled: false,
+    curveSegments: 48,
+  });
+  geo.translate(0, 0, -borderHeight / 2);
+  return geo;
+}
+
+function createOutlineShape(
+  shape: BaseShape,
+  width: number,
+  height: number,
+  cornerRadius: number,
+): THREE.Shape {
+  const s = new THREE.Shape();
+  const w = width / 2;
+  const h = height / 2;
+
+  if (shape === 'circle') {
+    const r = Math.min(w, h);
+    s.absarc(0, 0, r, 0, Math.PI * 2, false);
+    return s;
+  }
+
+  if (shape === 'rounded-rectangle' || shape === 'keychain') {
+    const r = Math.min(cornerRadius, Math.min(w, h));
+    s.moveTo(-w + r, -h);
+    s.lineTo(w - r, -h);
+    s.quadraticCurveTo(w, -h, w, -h + r);
+    s.lineTo(w, h - r);
+    s.quadraticCurveTo(w, h, w - r, h);
+    s.lineTo(-w + r, h);
+    s.quadraticCurveTo(-w, h, -w, h - r);
+    s.lineTo(-w, -h + r);
+    s.quadraticCurveTo(-w, -h, -w + r, -h);
+    return s;
+  }
+
+  // rectangle
+  s.moveTo(-w, -h);
+  s.lineTo(w, -h);
+  s.lineTo(w, h);
+  s.lineTo(-w, h);
+  s.closePath();
+  return s;
+}
+
 function mergeGeos(geos: THREE.BufferGeometry[]): THREE.BufferGeometry {
   const out = new THREE.BufferGeometry();
   const positions: number[] = [];
