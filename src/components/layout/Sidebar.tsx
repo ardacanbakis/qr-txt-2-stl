@@ -3,6 +3,7 @@ import { SectionHeader } from '../shared/SectionHeader';
 import { GeneratorTabs } from '../settings/GeneratorTabs';
 import { BaseSettings } from '../settings/BaseSettings';
 import { ModelSettings } from '../settings/ModelSettings';
+import { MountingSettings } from '../settings/MountingSettings';
 import { ColorSettings } from '../settings/ColorSettings';
 import { Toggle } from '../shared/Toggle';
 import { TemplatesPanel } from './TemplatesPanel';
@@ -200,14 +201,22 @@ export function Sidebar(props: SidebarProps) {
             <SectionHeader title="Model" defaultOpen>
               <ModelSettings
                 content={config.content}
-                base={config.base}
-                magnets={config.magnets}
-                mounting={config.mounting}
                 onContentChange={onContentChange}
-                onBaseChange={onBaseChange}
-                onMagnetChange={onMagnetChange}
-                onMountingChange={onMountingChange}
               />
+              {/* Mounting inline in single mode only */}
+              {!isDual && (
+                <div className="border-t border-gray-700 pt-3 mt-3">
+                  <p className="text-xs text-gray-500 uppercase tracking-wider font-medium mb-3">Mounting</p>
+                  <MountingSettings
+                    base={config.base}
+                    magnets={config.magnets}
+                    mounting={config.mounting}
+                    onBaseChange={onBaseChange}
+                    onMagnetChange={onMagnetChange}
+                    onMountingChange={onMountingChange}
+                  />
+                </div>
+              )}
             </SectionHeader>
           )}
 

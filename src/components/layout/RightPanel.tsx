@@ -1,15 +1,20 @@
 import { SectionHeader } from '../shared/SectionHeader';
 import { BaseSettings } from '../settings/BaseSettings';
+import { MountingSettings } from '../settings/MountingSettings';
 import { Toggle } from '../shared/Toggle';
 import type {
   ModelConfig,
   BaseConfig,
+  MagnetHoleConfig,
+  MountingConfig,
   ExportConfig,
 } from '../../types/model';
 
 interface RightPanelProps {
   config: ModelConfig;
   onBaseChange: (u: Partial<BaseConfig>) => void;
+  onMagnetChange: (u: Partial<MagnetHoleConfig>) => void;
+  onMountingChange: (u: Partial<MountingConfig>) => void;
   onExportChange: (u: Partial<ExportConfig>) => void;
   onExport: () => void;
   isExporting?: boolean;
@@ -18,22 +23,34 @@ interface RightPanelProps {
 export function RightPanel({
   config,
   onBaseChange,
+  onMagnetChange,
+  onMountingChange,
   onExportChange,
   onExport,
   isExporting,
 }: RightPanelProps) {
   const showBase = config.generator !== 'lithophane';
+  const showMounting = config.generator !== 'lithophane' && config.generator !== 'image';
 
   return (
     <aside className="w-[280px] min-w-[280px] h-full bg-gray-800 border-l border-gray-700 flex flex-col overflow-hidden">
-      <div className="px-3 py-3 border-b border-gray-700">
-        <h2 className="text-sm font-semibold text-gray-300 tracking-tight">Base Plate</h2>
-      </div>
-
       <div className="flex-1 overflow-y-auto">
         {showBase && (
           <SectionHeader title="Base Plate" defaultOpen>
             <BaseSettings base={config.base} onChange={onBaseChange} />
+          </SectionHeader>
+        )}
+
+        {showMounting && (
+          <SectionHeader title="Mounting" defaultOpen>
+            <MountingSettings
+              base={config.base}
+              magnets={config.magnets}
+              mounting={config.mounting}
+              onBaseChange={onBaseChange}
+              onMagnetChange={onMagnetChange}
+              onMountingChange={onMountingChange}
+            />
           </SectionHeader>
         )}
       </div>
