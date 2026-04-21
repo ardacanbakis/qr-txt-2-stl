@@ -57,6 +57,16 @@ export function RightPanel({
 
       {/* Pinned export footer */}
       <div className="px-3 py-3 border-t border-gray-700 space-y-2">
+        <div className="text-center text-[10px] text-gray-600 pb-1">
+          Created with{' '}
+          <svg className="inline w-2.5 h-2.5 -mt-px" viewBox="0 0 24 24" fill="#ef4444">
+            <path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z" />
+          </svg>{' '}
+          by{' '}
+          <a href="https://ardacanbakis.com" target="_blank" rel="noopener noreferrer" className="text-gray-500 hover:text-blue-400 transition-colors">
+            Arda Canbakis
+          </a>
+        </div>
         <Toggle
           label="Separate Parts (multi-color)"
           checked={config.export.separateParts}
