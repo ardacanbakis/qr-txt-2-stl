@@ -66,7 +66,7 @@ function BaseMesh({ config }: { config: ModelConfig }) {
       userData={{ part: 'base' }}
     >
       <primitive object={geometry} attach="geometry" />
-      <meshStandardMaterial color={config.colors.base} roughness={0.4} metalness={0.1} />
+      <meshStandardMaterial color={config.colors.base} roughness={0.4} metalness={0.1} polygonOffset polygonOffsetFactor={1} polygonOffsetUnits={1} />
     </mesh>
   );
 }
@@ -435,7 +435,7 @@ function SpotifyGeneratorGroup({ config }: { config: ModelConfig }) {
         <meshStandardMaterial color={config.colors.content} roughness={0.3} metalness={0.2} />
       </mesh>
       {config.spotify.showLogo && (
-        <mesh position={[0, 0, z]} userData={{ part: 'logo' }}>
+        <mesh position={[0, 0, z + 0.01]} userData={{ part: 'logo' }}>
           <primitive object={geometries.logo} attach="geometry" />
           <meshStandardMaterial color={config.colors.logo} roughness={0.3} metalness={0.2} />
         </mesh>
