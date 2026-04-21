@@ -1,26 +1,16 @@
 import { SectionHeader } from '../shared/SectionHeader';
 import { BaseSettings } from '../settings/BaseSettings';
-import { ModelSettings } from '../settings/ModelSettings';
-import { ColorSettings } from '../settings/ColorSettings';
 import { Toggle } from '../shared/Toggle';
 import type {
   ModelConfig,
   BaseConfig,
-  ContentConfig,
-  MagnetHoleConfig,
-  MountingConfig,
   ExportConfig,
-  ColorConfig,
 } from '../../types/model';
 
 interface RightPanelProps {
   config: ModelConfig;
   onBaseChange: (u: Partial<BaseConfig>) => void;
-  onContentChange: (u: Partial<ContentConfig>) => void;
-  onMagnetChange: (u: Partial<MagnetHoleConfig>) => void;
-  onMountingChange: (u: Partial<MountingConfig>) => void;
   onExportChange: (u: Partial<ExportConfig>) => void;
-  onColorsChange: (u: Partial<ColorConfig>) => void;
   onExport: () => void;
   isExporting?: boolean;
 }
@@ -28,21 +18,16 @@ interface RightPanelProps {
 export function RightPanel({
   config,
   onBaseChange,
-  onContentChange,
-  onMagnetChange,
-  onMountingChange,
   onExportChange,
-  onColorsChange,
   onExport,
   isExporting,
 }: RightPanelProps) {
   const showBase = config.generator !== 'lithophane';
-  const showModel = config.generator !== 'lithophane' && config.generator !== 'image';
 
   return (
     <aside className="w-[280px] min-w-[280px] h-full bg-gray-800 border-l border-gray-700 flex flex-col overflow-hidden">
       <div className="px-3 py-3 border-b border-gray-700">
-        <h2 className="text-sm font-semibold text-gray-300 tracking-tight">Model Settings</h2>
+        <h2 className="text-sm font-semibold text-gray-300 tracking-tight">Base Plate</h2>
       </div>
 
       <div className="flex-1 overflow-y-auto">
@@ -51,29 +36,6 @@ export function RightPanel({
             <BaseSettings base={config.base} onChange={onBaseChange} />
           </SectionHeader>
         )}
-
-        {showModel && (
-          <SectionHeader title="Model" defaultOpen>
-            <ModelSettings
-              content={config.content}
-              base={config.base}
-              magnets={config.magnets}
-              mounting={config.mounting}
-              onContentChange={onContentChange}
-              onBaseChange={onBaseChange}
-              onMagnetChange={onMagnetChange}
-              onMountingChange={onMountingChange}
-            />
-          </SectionHeader>
-        )}
-
-        <SectionHeader title="Colors" defaultOpen={false}>
-          <ColorSettings
-            colors={config.colors}
-            generator={config.generator}
-            onChange={onColorsChange}
-          />
-        </SectionHeader>
       </div>
 
       {/* Pinned export footer */}

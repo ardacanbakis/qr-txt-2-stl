@@ -122,11 +122,7 @@ function App() {
         <RightPanel
           config={config}
           onBaseChange={updateBase}
-          onContentChange={updateContent}
-          onMagnetChange={updateMagnets}
-          onMountingChange={updateMounting}
           onExportChange={updateExport}
-          onColorsChange={updateColors}
           onExport={handleExport}
           isExporting={isExporting}
         />

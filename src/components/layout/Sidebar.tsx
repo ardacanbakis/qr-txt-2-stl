@@ -195,38 +195,36 @@ export function Sidebar(props: SidebarProps) {
             {config.generator === 'nameplate' && <NameplateSettings config={config.nameplate} onChange={onNameplateChange} />}
           </SectionHeader>
 
-          {!isDual && (
-            <>
-              {showBase && (
-                <SectionHeader title="Base Plate" defaultOpen>
-                  <BaseSettings base={config.base} onChange={onBaseChange} />
-                </SectionHeader>
-              )}
-
-              {showModel && (
-                <SectionHeader title="Model" defaultOpen>
-                  <ModelSettings
-                    content={config.content}
-                    base={config.base}
-                    magnets={config.magnets}
-                    mounting={config.mounting}
-                    onContentChange={onContentChange}
-                    onBaseChange={onBaseChange}
-                    onMagnetChange={onMagnetChange}
-                    onMountingChange={onMountingChange}
-                  />
-                </SectionHeader>
-              )}
-
-              <SectionHeader title="Colors" defaultOpen={false}>
-                <ColorSettings
-                  colors={config.colors}
-                  generator={config.generator}
-                  onChange={onColorsChange}
-                />
-              </SectionHeader>
-            </>
+          {/* Model section always right under generator settings */}
+          {showModel && (
+            <SectionHeader title="Model" defaultOpen>
+              <ModelSettings
+                content={config.content}
+                base={config.base}
+                magnets={config.magnets}
+                mounting={config.mounting}
+                onContentChange={onContentChange}
+                onBaseChange={onBaseChange}
+                onMagnetChange={onMagnetChange}
+                onMountingChange={onMountingChange}
+              />
+            </SectionHeader>
           )}
+
+          {/* Base Plate only in single-sidebar mode (moves to right panel in dual) */}
+          {!isDual && showBase && (
+            <SectionHeader title="Base Plate" defaultOpen>
+              <BaseSettings base={config.base} onChange={onBaseChange} />
+            </SectionHeader>
+          )}
+
+          <SectionHeader title="Colors" defaultOpen>
+            <ColorSettings
+              colors={config.colors}
+              generator={config.generator}
+              onChange={onColorsChange}
+            />
+          </SectionHeader>
         </div>
 
         {/* Pinned export footer */}
