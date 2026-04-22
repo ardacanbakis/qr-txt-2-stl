@@ -39,7 +39,7 @@ function baseZ(content: ModelConfig['content']): number {
 
 function fontUrl(style: FontStyle): string {
   const bold = style === 'bold' || style === 'bold-italic';
-  return `${import.meta.env.BASE_URL}fonts/${bold ? 'helvetiker_bold' : 'helvetiker_regular'}.typeface.json`;
+  return `${import.meta.env.BASE_URL}fonts/${bold ? 'dejavu_bold' : 'dejavu_regular'}.typeface.json`;
 }
 
 // --- Shared BaseMesh ---

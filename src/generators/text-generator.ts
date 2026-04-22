@@ -120,7 +120,7 @@ export function fitTextToWidth(
  */
 export function fontUrlForStyle(style: FontStyle, basePath = ''): string {
   const bold = style === 'bold' || style === 'bold-italic';
-  return `${basePath}fonts/${bold ? 'helvetiker_bold' : 'helvetiker_regular'}.typeface.json`;
+  return `${basePath}fonts/${bold ? 'dejavu_bold' : 'dejavu_regular'}.typeface.json`;
 }
 
 export function isItalic(style: FontStyle): boolean {
