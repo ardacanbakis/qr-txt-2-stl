@@ -21,6 +21,7 @@ function getBaseName(config: ReturnType<typeof useModelConfig>['config']): strin
     g === 'lithophane' ? (config.lithophane.fileName.replace(/\.[^.]+$/, '') || 'lithophane') :
     g === 'barcode' ? config.barcode.text :
     g === 'nameplate' ? config.nameplate.primaryText :
+    g === 'map' ? 'map' :
     'model';
   return (raw || 'model').slice(0, 30).replace(/[^a-zA-Z0-9]+/g, '_') || 'model';
 }
@@ -41,6 +42,7 @@ function App() {
     updateLithophane,
     updateBarcode,
     updateNameplate,
+    updateMap,
     updateMagnets,
     updateMounting,
     updateExport,
@@ -89,6 +91,7 @@ function App() {
     onLithophaneChange: updateLithophane,
     onBarcodeChange: updateBarcode,
     onNameplateChange: updateNameplate,
+    onMapChange: updateMap,
     onMagnetChange: updateMagnets,
     onMountingChange: updateMounting,
     onExportChange: updateExport,

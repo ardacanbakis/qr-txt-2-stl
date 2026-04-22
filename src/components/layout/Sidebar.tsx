@@ -17,6 +17,7 @@ import {
   LithophaneSettings,
   BarcodeSettings,
   NameplateSettings,
+  MapSettings,
 } from '../settings/GeneratorSettings';
 import type {
   ModelConfig,
@@ -34,6 +35,7 @@ import type {
   LithophaneConfig,
   BarcodeConfig,
   NameplateConfig,
+  MapConfig,
   ColorConfig,
 } from '../../types/model';
 
@@ -54,6 +56,7 @@ interface SidebarProps {
   onLithophaneChange: (u: Partial<LithophaneConfig>) => void;
   onBarcodeChange: (u: Partial<BarcodeConfig>) => void;
   onNameplateChange: (u: Partial<NameplateConfig>) => void;
+  onMapChange: (u: Partial<MapConfig>) => void;
   onMagnetChange: (u: Partial<MagnetHoleConfig>) => void;
   onMountingChange: (u: Partial<MountingConfig>) => void;
   onExportChange: (u: Partial<ExportConfig>) => void;
@@ -73,6 +76,7 @@ const GENERATOR_LABELS: Record<GeneratorType, string> = {
   lithophane: 'Lithophane',
   barcode: 'Barcode',
   nameplate: 'Nameplate',
+  map: 'Map',
 };
 
 function IconSingle() {
@@ -99,7 +103,7 @@ export function Sidebar(props: SidebarProps) {
     config, layout, onLayoutChange, onGeneratorChange,
     onBaseChange, onContentChange, onTextChange, onSpotifyChange,
     onWifiChange, onVCardChange, onImageChange, onLithophaneChange,
-    onBarcodeChange, onNameplateChange, onMagnetChange, onMountingChange,
+    onBarcodeChange, onNameplateChange, onMapChange, onMagnetChange, onMountingChange,
     onExportChange, onColorsChange, onExport, onTemplateApply,
     isExporting,
   } = props;
@@ -194,6 +198,7 @@ export function Sidebar(props: SidebarProps) {
             {config.generator === 'lithophane' && <LithophaneSettings config={config.lithophane} onChange={onLithophaneChange} />}
             {config.generator === 'barcode' && <BarcodeSettings config={config.barcode} onChange={onBarcodeChange} />}
             {config.generator === 'nameplate' && <NameplateSettings config={config.nameplate} onChange={onNameplateChange} />}
+            {config.generator === 'map' && <MapSettings config={config.map} onChange={onMapChange} />}
           </SectionHeader>
 
           {/* Model section always right under generator settings */}

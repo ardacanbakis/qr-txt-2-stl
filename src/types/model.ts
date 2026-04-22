@@ -7,7 +7,8 @@ export type GeneratorType =
   | 'image'
   | 'lithophane'
   | 'barcode'
-  | 'nameplate';
+  | 'nameplate'
+  | 'map';
 
 export type InputType = 'text' | 'url' | 'wifi' | 'vcard' | 'spotify' | 'label';
 
@@ -141,6 +142,20 @@ export interface NameplateConfig {
   secondarySize: number;
 }
 
+export type MapMode = 'streets' | 'terrain' | 'combined';
+
+export interface MapConfig {
+  lat: number;
+  lng: number;
+  zoom: number;
+  radius: number;
+  mode: MapMode;
+  buildingHeight: number;
+  streetWidth: number;
+  terrainExaggeration: number;
+  skylinePreset: string;
+}
+
 export interface ExportConfig {
   separateParts: boolean;
   quality: ExportQuality;
@@ -167,6 +182,7 @@ export interface ModelConfig {
   lithophane: LithophaneConfig;
   barcode: BarcodeConfig;
   nameplate: NameplateConfig;
+  map: MapConfig;
   magnets: MagnetHoleConfig;
   mounting: MountingConfig;
   export: ExportConfig;
@@ -251,6 +267,17 @@ export const DEFAULT_CONFIG: ModelConfig = {
     fontStyle: 'bold',
     primarySize: 8,
     secondarySize: 4,
+  },
+  map: {
+    lat: 41.0082,
+    lng: 28.9784,
+    zoom: 15,
+    radius: 500,
+    mode: 'streets',
+    buildingHeight: 3,
+    streetWidth: 1.5,
+    terrainExaggeration: 2,
+    skylinePreset: 'custom',
   },
   magnets: {
     enabled: false,

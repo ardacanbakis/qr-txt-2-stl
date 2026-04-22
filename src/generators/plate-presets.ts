@@ -77,4 +77,11 @@ export const PLATE_PRESETS: Record<GeneratorType, PlatePreset> = {
     cornerRadius: 4,
     borderWidth: 3,
   },
+  map: {
+    width: 100,
+    height: 100,
+    shape: 'rectangle',
+    cornerRadius: 2,
+    borderWidth: 3,
+  },
 };

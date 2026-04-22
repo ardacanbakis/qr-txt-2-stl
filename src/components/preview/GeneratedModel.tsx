@@ -728,6 +728,74 @@ function LithophaneGeneratorGroup({ config }: { config: ModelConfig }) {
   );
 }
 
+// --- Map Generator ---
+
+function useMapGeometries(config: ModelConfig) {
+  const [geometries, setGeometries] = useState<{ streets: THREE.BufferGeometry; buildings: THREE.BufferGeometry } | null>(null);
+
+  useEffect(() => {
+    if (config.generator !== 'map') {
+      setGeometries(null);
+      return;
+    }
+
+    let cancelled = false;
+
+    import('../../generators/map-generator').then(async (mod) => {
+      try {
+        const result = await mod.fetchAndBuildMap(
+          config.map,
+          config.base.width,
+          config.base.height,
+          config.base.borderWidth,
+          config.content.contentHeight,
+          config.content.mode === 'embossed',
+        );
+        if (!cancelled) {
+          setGeometries({ streets: result.streets, buildings: result.buildings });
+        }
+      } catch {
+        if (!cancelled) setGeometries(null);
+      }
+    });
+
+    return () => { cancelled = true; };
+  }, [
+    config.generator, config.map, config.base.width, config.base.height,
+    config.base.borderWidth, config.content.contentHeight, config.content.mode,
+  ]);
+
+  return geometries;
+}
+
+function MapGeneratorGroup({ config }: { config: ModelConfig }) {
+  const embossed = config.content.mode === 'embossed';
+  const geos = useMapGeometries(config);
+  const z = contentZ(config.base, config.content, embossed);
+
+  if (!geos) {
+    return (
+      <mesh position={[0, 0, z]} userData={{ part: 'content' }}>
+        <boxGeometry args={[2, 2, config.content.contentHeight]} />
+        <meshStandardMaterial color={config.colors.content} roughness={0.3} metalness={0.2} />
+      </mesh>
+    );
+  }
+
+  return (
+    <>
+      <mesh position={[0, 0, z]} userData={{ part: 'content' }}>
+        <primitive object={geos.streets} attach="geometry" />
+        <meshStandardMaterial color={config.colors.content} roughness={0.3} metalness={0.2} />
+      </mesh>
+      <mesh position={[0, 0, z]} userData={{ part: 'secondary' }}>
+        <primitive object={geos.buildings} attach="geometry" />
+        <meshStandardMaterial color={config.colors.secondary} roughness={0.3} metalness={0.2} />
+      </mesh>
+    </>
+  );
+}
+
 // --- Main dispatcher ---
 
 export const GeneratedModel = forwardRef<GeneratedModelRef, GeneratedModelProps>(
@@ -763,6 +831,7 @@ export const GeneratedModel = forwardRef<GeneratedModelRef, GeneratedModelProps>
         {config.generator === 'image' && <ImageGeneratorGroup config={config} />}
         {config.generator === 'barcode' && <BarcodeGeneratorGroup config={config} />}
         {config.generator === 'nameplate' && <NameplateGeneratorGroup config={config} />}
+        {config.generator === 'map' && <MapGeneratorGroup config={config} />}
       </group>
     );
   }

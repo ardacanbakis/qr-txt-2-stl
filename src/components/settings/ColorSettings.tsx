@@ -52,6 +52,7 @@ const COLOR_SLOTS: Record<GeneratorType, Array<keyof ColorConfig>> = {
   lithophane: ['base'],
   barcode:    ['base', 'border', 'content', 'text'],
   nameplate:  ['base', 'border', 'text', 'secondary'],
+  map:        ['base', 'border', 'content', 'secondary'],
 };
 
 const LABELS: Record<keyof ColorConfig, string> = {

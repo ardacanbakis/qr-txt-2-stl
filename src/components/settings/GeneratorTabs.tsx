@@ -107,11 +107,21 @@ const TABS: TabDef[] = [
       </svg>
     ),
   },
+  {
+    value: 'map',
+    label: 'Map',
+    icon: (
+      <svg className={iconClass} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2}>
+        <path d="M9 2L3 5v17l6-3 6 3 6-3V2l-6 3-6-3z" />
+        <path d="M9 2v17M15 5v17" />
+      </svg>
+    ),
+  },
 ];
 
 export function GeneratorTabs({ value, onChange }: GeneratorTabsProps) {
   return (
-    <div className="grid grid-cols-3 gap-1.5 p-2">
+    <div className="grid grid-cols-5 gap-1.5 p-2">
       {TABS.map((tab) => {
         const active = tab.value === value;
         return (

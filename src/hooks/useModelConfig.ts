@@ -14,6 +14,7 @@ import type {
   LithophaneConfig,
   BarcodeConfig,
   NameplateConfig,
+  MapConfig,
   ColorConfig,
   GeneratorType,
 } from '../types/model';
@@ -123,6 +124,10 @@ export function useModelConfig() {
     setConfig(prev => ({ ...prev, nameplate: { ...prev.nameplate, ...updates } }));
   }, [setConfig]);
 
+  const updateMap = useCallback((updates: Partial<MapConfig>) => {
+    setConfig(prev => ({ ...prev, map: { ...prev.map, ...updates } }));
+  }, [setConfig]);
+
   const updateMagnets = useCallback((updates: Partial<MagnetHoleConfig>) => {
     setConfig(prev => ({ ...prev, magnets: { ...prev.magnets, ...updates } }));
   }, [setConfig]);
@@ -160,6 +165,7 @@ export function useModelConfig() {
     updateLithophane,
     updateBarcode,
     updateNameplate,
+    updateMap,
     updateMagnets,
     updateMounting,
     updateExport,

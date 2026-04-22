@@ -8,6 +8,8 @@ import type {
   LithophaneConfig,
   BarcodeConfig,
   NameplateConfig,
+  MapConfig,
+  MapMode,
   FontStyle,
   BarcodeFormat,
   WifiEncryption,
@@ -474,6 +476,128 @@ export function NameplateSettings({
         step={0.5}
         onChange={(v) => onChange({ secondarySize: v })}
       />
+    </div>
+  );
+}
+
+// ---- Map settings ----
+
+const MAP_MODE_OPTIONS = [
+  { value: 'streets', label: 'Streets & Buildings' },
+  { value: 'terrain', label: 'Terrain Relief' },
+  { value: 'combined', label: 'Combined' },
+];
+
+const SKYLINE_PRESETS: { value: string; label: string; lat: number; lng: number; radius: number }[] = [
+  { value: 'custom', label: 'Custom Location', lat: 0, lng: 0, radius: 500 },
+  { value: 'istanbul', label: 'Istanbul', lat: 41.0082, lng: 28.9784, radius: 800 },
+  { value: 'new-york', label: 'New York (Manhattan)', lat: 40.7580, lng: -73.9855, radius: 600 },
+  { value: 'paris', label: 'Paris', lat: 48.8566, lng: 2.3522, radius: 700 },
+  { value: 'london', label: 'London', lat: 51.5074, lng: -0.1278, radius: 700 },
+  { value: 'tokyo', label: 'Tokyo', lat: 35.6762, lng: 139.6503, radius: 600 },
+  { value: 'dubai', label: 'Dubai', lat: 25.1972, lng: 55.2744, radius: 500 },
+  { value: 'rome', label: 'Rome', lat: 41.9028, lng: 12.4964, radius: 600 },
+  { value: 'barcelona', label: 'Barcelona', lat: 41.3851, lng: 2.1734, radius: 600 },
+  { value: 'san-francisco', label: 'San Francisco', lat: 37.7749, lng: -122.4194, radius: 600 },
+  { value: 'singapore', label: 'Singapore', lat: 1.2838, lng: 103.8591, radius: 500 },
+];
+
+export function MapSettings({
+  config,
+  onChange,
+}: {
+  config: MapConfig;
+  onChange: (u: Partial<MapConfig>) => void;
+}) {
+  const handlePreset = (v: string) => {
+    const preset = SKYLINE_PRESETS.find(p => p.value === v);
+    if (preset && preset.value !== 'custom') {
+      onChange({
+        skylinePreset: v,
+        lat: preset.lat,
+        lng: preset.lng,
+        radius: preset.radius,
+      });
+    } else {
+      onChange({ skylinePreset: v });
+    }
+  };
+
+  return (
+    <div className="space-y-3">
+      <Select
+        label="City Preset"
+        value={config.skylinePreset}
+        options={SKYLINE_PRESETS.map(p => ({ value: p.value, label: p.label }))}
+        onChange={handlePreset}
+      />
+      <Select
+        label="Mode"
+        value={config.mode}
+        options={MAP_MODE_OPTIONS}
+        onChange={(v) => onChange({ mode: v as MapMode })}
+      />
+      <div className="grid grid-cols-2 gap-2">
+        <div className="flex flex-col gap-1">
+          <Label>Latitude</Label>
+          <TextInput
+            value={String(config.lat)}
+            onChange={(v) => { const n = parseFloat(v); if (!isNaN(n)) onChange({ lat: n }); }}
+            placeholder="41.0082"
+          />
+        </div>
+        <div className="flex flex-col gap-1">
+          <Label>Longitude</Label>
+          <TextInput
+            value={String(config.lng)}
+            onChange={(v) => { const n = parseFloat(v); if (!isNaN(n)) onChange({ lng: n }); }}
+            placeholder="28.9784"
+          />
+        </div>
+      </div>
+      <Slider
+        label="Radius"
+        value={config.radius}
+        min={100}
+        max={2000}
+        step={50}
+        unit="m"
+        onChange={(v) => onChange({ radius: v })}
+      />
+      {(config.mode === 'streets' || config.mode === 'combined') && (
+        <>
+          <Slider
+            label="Building Height"
+            value={config.buildingHeight}
+            min={0.5}
+            max={8}
+            step={0.5}
+            onChange={(v) => onChange({ buildingHeight: v })}
+          />
+          <Slider
+            label="Street Width"
+            value={config.streetWidth}
+            min={0.5}
+            max={4}
+            step={0.25}
+            onChange={(v) => onChange({ streetWidth: v })}
+          />
+        </>
+      )}
+      {(config.mode === 'terrain' || config.mode === 'combined') && (
+        <Slider
+          label="Terrain Exaggeration"
+          value={config.terrainExaggeration}
+          min={0.5}
+          max={5}
+          step={0.5}
+          onChange={(v) => onChange({ terrainExaggeration: v })}
+        />
+      )}
+      <p className="text-xs text-gray-500 italic">
+        Uses OpenStreetMap data. Select a city preset or enter coordinates manually.
+        Fetches streets, buildings, and elevation data for the selected area.
+      </p>
     </div>
   );
 }
