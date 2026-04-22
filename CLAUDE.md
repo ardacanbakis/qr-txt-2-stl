@@ -126,7 +126,7 @@ qr-txt-2-stl/
 ### Base Plate Options
 - **Shapes**: Rectangle, Rounded Rectangle, Circle, Keychain (built-in tab + hole)
 - **Dimensions**: Width (mm), Height (mm), Thickness (mm) — all user-configurable
-- **Border**: Configurable border width around content
+- **Border Frame**: Physical raised frame on top of base plate surrounding content. Toggle on/off, configurable width (also controls content padding), height, and color. Enabled by default. Tagged `part: 'border'` for separate-part STL export. Generated via ExtrudeGeometry with inner hole (outer plate shape minus inset content area).
 - **Edge Treatment**: None, Fillet (rounded), or Chamfer (angled) via ExtrudeGeometry bevel
 - **Keychain Tab**: For non-keychain shapes, toggle adds a physical semicircular tab with punched hole (same material as base, exports as part of base STL)
 
@@ -156,9 +156,10 @@ qr-txt-2-stl/
 
 ### Layout Modes
 - **Single sidebar** (default, 380px): Generator → Model (content settings + mounting) → Base Plate → Colors → [pinned export]
-- **Dual sidebar**: Left (300px) = Generator → Model (content only) → Colors. Right (280px) = Base Plate → Mounting → [pinned export]
+- **Dual sidebar**: Left (300px) = Generator → Model (content only) → Colors → [pinned export]. Right (280px) = Base Plate → Mounting → [portfolio credit + pinned export]
 - Toggle button in sidebar header switches between modes
 - Sidebar can be collapsed to a 40px icon strip
+- Portfolio credit footer (ardacanbakis.com) only shown on right panel in dual mode
 
 ### Welcome Screen
 - Full-screen onboarding for first-time visitors (localStorage-gated)
@@ -227,10 +228,13 @@ git push origin claude/stl-generator-webapp-IHm9I:claude   # remote branch is na
 ## Key Technical Notes
 
 1. **STL Generation is client-side**: The Three.js scene IS the model. STLExporter serializes the scene geometry directly. No server round-trip needed.
-2. **ZIP export**: Implemented as a pure JS stored-zip builder (no compression, no external deps). CRC-32 computed inline. Meshes tagged with `userData.part` ('base', 'content', 'text', 'secondary', 'logo') are grouped per tag. Meshes tagged `'ignore'` (red indicators) are excluded.
-3. **Spotify Codes**: Real scannables fetched from `scannables.scdn.co/uri/plain/svg/000000/white/640/{uri}` (CORS enabled). SVG is rasterized via a `<canvas>` element and handed to the image silhouette geometry builder with `invert: true`. Returns `SpotifyGeometries { bars, logo }` for independent coloring.
+2. **ZIP export**: Implemented as a pure JS stored-zip builder (no compression, no external deps). CRC-32 computed inline. Meshes tagged with `userData.part` ('base', 'border', 'content', 'text', 'secondary', 'logo') are grouped per tag. Meshes tagged `'ignore'` (red indicators) are excluded.
+3. **Spotify Codes**: Real scannables fetched from `scannables.scdn.co/uri/plain/svg/000000/white/640/{uri}` (CORS enabled). SVG parsed by SVGLoader, vector shapes extruded directly (no rasterization). Returns `SpotifyGeometries { bars, logo }` for independent coloring. Logo mesh is offset +0.01mm in Z to prevent z-fighting with bars.
 4. **Keychain tab**: For the dedicated "keychain" base shape, the tab + hole is part of the ExtrudeGeometry shape (hole via `shape.holes`). For other shapes with `keychainHole` toggle, `createKeychainTabGeometry` generates a standalone semicircular tab (2mm wall around hole) positioned at the plate's top edge, tagged `part: 'base'` for STL export.
 5. **Edge treatment**: Fillet and chamfer are implemented via ExtrudeGeometry `bevelEnabled` + `bevelSegments` (4 for fillet, 1 for chamfer). Rectangle base switches from BoxGeometry to ExtrudeGeometry when bevel is enabled.
 6. **Undo/redo**: 50-step history stored as `useRef`-based array in `useModelConfig`. A `historyVer` state counter forces re-renders when `canUndo`/`canRedo` change. Buttons in ViewToolbar.
 7. **Performance**: `useMemo`-cached geometries per generator. Async loads (Spotify fetch, image load) use `useEffect` + state with cancellation on cleanup.
 8. **Camera system**: Z-up spherical coordinates with animated transitions (`easeOutCubic`). View presets defined as `{ phi, theta, up }`. Home = top view. All preset commands reset orbit target to origin.
+9. **Z-fighting prevention**: Base plate material uses `polygonOffset` (factor=1, units=1) to push it behind content surfaces in the depth buffer. Spotify logo mesh has a +0.01mm Z offset above bars. These are preview-only fixes — STL export uses geometry positions only.
+10. **Border frame geometry**: `createBorderFrameGeometry()` in base-generator.ts builds an outer plate outline Shape with an inner hole (inset by borderWidth), extruded to borderHeight. `createOutlineShape()` helper generates the outline for any base shape (rect, rounded-rect, circle, keychain). `BorderFrameMesh` in GeneratedModel.tsx positions it on the base surface.
+11. **Font limitations**: Helvetiker typeface.json fonts (regular + bold) only contain ~208 basic Latin glyphs. Extended characters (Turkish ş/ı/ç/ö/ü/ğ, etc.) render as "?" — a known limitation. Switching fonts requires generating new typeface.json files.
