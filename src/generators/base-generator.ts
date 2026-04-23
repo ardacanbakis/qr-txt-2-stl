@@ -71,7 +71,9 @@ function createCircleBase(
   filletRadius: number,
 ): THREE.BufferGeometry {
   if (edgeTreatment === 'none') {
-    return new THREE.CylinderGeometry(radius, radius, thickness, 64);
+    const geo = new THREE.CylinderGeometry(radius, radius, thickness, 64);
+    geo.rotateX(Math.PI / 2);
+    return geo;
   }
   const shape = new THREE.Shape();
   shape.absarc(0, 0, radius, 0, Math.PI * 2, false);

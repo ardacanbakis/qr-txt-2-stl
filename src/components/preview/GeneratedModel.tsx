@@ -79,7 +79,7 @@ function BaseMesh({ config }: { config: ModelConfig }) {
   return (
     <mesh
       position={[0, 0, baseZ(config.content)]}
-      rotation={config.base.shape === 'circle' ? [Math.PI / 2, 0, 0] : [0, 0, 0]}
+      rotation={[0, 0, 0]}
       userData={{ part: 'base' }}
     >
       <primitive object={geometry} attach="geometry" />

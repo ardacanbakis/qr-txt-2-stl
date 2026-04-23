@@ -24,7 +24,7 @@ export const PLATE_PRESETS: Record<GeneratorType, PlatePreset> = {
     shape: 'rounded-rectangle',
     cornerRadius: 4,
     borderWidth: 3,
-    borderEnabled: true,
+    borderEnabled: false,
   },
   spotify: {
     width: 100,
@@ -32,7 +32,7 @@ export const PLATE_PRESETS: Record<GeneratorType, PlatePreset> = {
     shape: 'rounded-rectangle',
     cornerRadius: 4,
     borderWidth: 5,
-    borderEnabled: true,
+    borderEnabled: false,
   },
   wifi: {
     width: 60,
@@ -40,7 +40,7 @@ export const PLATE_PRESETS: Record<GeneratorType, PlatePreset> = {
     shape: 'rounded-rectangle',
     cornerRadius: 3,
     borderWidth: 5,
-    borderEnabled: true,
+    borderEnabled: false,
   },
   vcard: {
     width: 60,
@@ -48,7 +48,7 @@ export const PLATE_PRESETS: Record<GeneratorType, PlatePreset> = {
     shape: 'rounded-rectangle',
     cornerRadius: 3,
     borderWidth: 5,
-    borderEnabled: true,
+    borderEnabled: false,
   },
   barcode: {
     width: 90,
