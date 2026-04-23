@@ -17,15 +17,20 @@ interface MapPickerProps {
   lng: number;
   radius: number;
   onChange: (updates: { lat?: number; lng?: number; radius?: number }) => void;
+  onExpandedChange?: (expanded: boolean) => void;
 }
 
-export function MapPicker({ lat, lng, radius, onChange }: MapPickerProps) {
+export function MapPicker({ lat, lng, radius, onChange, onExpandedChange }: MapPickerProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const mapRef = useRef<L.Map | null>(null);
   const circleRef = useRef<L.Circle | null>(null);
   const markerRef = useRef<L.Marker | null>(null);
-  const [expanded, setExpanded] = useState(false);
+  const [expanded, setExpanded] = useState(true);
   const skipViewUpdate = useRef(false);
+
+  useEffect(() => {
+    onExpandedChange?.(true);
+  }, []);
 
   useEffect(() => {
     if (!expanded || !containerRef.current || mapRef.current) return;
@@ -100,7 +105,7 @@ export function MapPicker({ lat, lng, radius, onChange }: MapPickerProps) {
     <div className="space-y-2">
       <button
         type="button"
-        onClick={() => setExpanded(!expanded)}
+        onClick={() => { const next = !expanded; setExpanded(next); onExpandedChange?.(next); }}
         className="w-full flex items-center justify-between gap-2 text-sm text-gray-300 hover:text-white bg-gray-700 hover:bg-gray-600 rounded-md px-3 py-2 border border-gray-600 transition-colors"
       >
         <span className="flex items-center gap-2">

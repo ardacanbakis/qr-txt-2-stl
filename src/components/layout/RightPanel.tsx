@@ -18,6 +18,8 @@ interface RightPanelProps {
   onExportChange: (u: Partial<ExportConfig>) => void;
   onExport: () => void;
   isExporting?: boolean;
+  buildPlateWidth?: number;
+  buildPlateHeight?: number;
 }
 
 export function RightPanel({
@@ -28,6 +30,8 @@ export function RightPanel({
   onExportChange,
   onExport,
   isExporting,
+  buildPlateWidth,
+  buildPlateHeight,
 }: RightPanelProps) {
   const showMounting = config.generator !== 'lithophane';
 
@@ -35,7 +39,13 @@ export function RightPanel({
     <aside className="w-[280px] min-w-[280px] h-full bg-gray-800 border-l border-gray-700 flex flex-col overflow-hidden">
       <div className="flex-1 overflow-y-auto">
         <SectionHeader title="Base Plate" defaultOpen>
-          <BaseSettings base={config.base} onChange={onBaseChange} />
+          <BaseSettings
+            base={config.base}
+            onChange={onBaseChange}
+            buildPlateWidth={buildPlateWidth}
+            buildPlateHeight={buildPlateHeight}
+            showPlatePresets={config.generator === 'lithophane' || config.generator === 'map'}
+          />
         </SectionHeader>
 
         <SectionHeader title="Border Frame" defaultOpen>

@@ -202,19 +202,25 @@ interface Preview3DProps {
   onRedo: () => void;
   canUndo: boolean;
   canRedo: boolean;
+  buildPlateIndex: number;
+  onBuildPlateChange: (index: number) => void;
+  customPlateSize: { width: number; height: number };
+  onCustomPlateSizeChange: (size: { width: number; height: number }) => void;
 }
 
-export const Preview3D = forwardRef<GeneratedModelRef, Preview3DProps>(({ config, onUndo, onRedo, canUndo, canRedo }, ref) => {
+export const Preview3D = forwardRef<GeneratedModelRef, Preview3DProps>(({ config, onUndo, onRedo, canUndo, canRedo, buildPlateIndex, onBuildPlateChange, customPlateSize, onCustomPlateSizeChange }, ref) => {
   const [showGrid, setShowGrid] = useState(true);
   const [darkMode, setDarkMode] = useState(true);
   const [isFullscreen, setIsFullscreen] = useState(false);
-  const [buildPlateIndex, setBuildPlateIndex] = useState(0);
   const [cameraCommand, setCameraCommand] = useState<CameraCommand | null>(null);
   const commandKey = useRef(0);
   const containerRef = useRef<HTMLDivElement>(null);
   const modelGroupRef = useRef<THREE.Group>(null);
 
-  const buildPlate = BUILD_PLATES[buildPlateIndex];
+  const plates = BUILD_PLATES.map((p) =>
+    p.custom ? { ...p, width: customPlateSize.width, height: customPlateSize.height } : p,
+  );
+  const buildPlate = plates[buildPlateIndex];
 
   const sendCommand = useCallback((type: string) => {
     commandKey.current++;
@@ -306,7 +312,7 @@ export const Preview3D = forwardRef<GeneratedModelRef, Preview3DProps>(({ config
         darkMode={darkMode}
         isFullscreen={isFullscreen}
         buildPlateIndex={buildPlateIndex}
-        buildPlates={BUILD_PLATES}
+        buildPlates={plates}
         onViewChange={(view) => sendCommand(view)}
         onHome={() => sendCommand('top')}
         onFit={() => sendCommand('fit')}
@@ -315,7 +321,8 @@ export const Preview3D = forwardRef<GeneratedModelRef, Preview3DProps>(({ config
         onToggleGrid={() => setShowGrid((v) => !v)}
         onToggleDarkMode={() => setDarkMode((v) => !v)}
         onToggleFullscreen={toggleFullscreen}
-        onBuildPlateChange={setBuildPlateIndex}
+        onBuildPlateChange={onBuildPlateChange}
+        onCustomBuildPlateChange={(w, h) => onCustomPlateSizeChange({ width: Math.max(50, Math.min(500, w)), height: Math.max(50, Math.min(500, h)) })}
         onUndo={onUndo}
         onRedo={onRedo}
         canUndo={canUndo}

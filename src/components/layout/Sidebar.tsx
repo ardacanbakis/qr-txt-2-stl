@@ -61,6 +61,8 @@ interface SidebarProps {
   onExport: () => void;
   onTemplateApply: (t: Partial<ModelConfig>) => void;
   isExporting?: boolean;
+  buildPlateWidth?: number;
+  buildPlateHeight?: number;
 }
 
 const GENERATOR_LABELS: Record<GeneratorType, string> = {
@@ -101,14 +103,16 @@ export function Sidebar(props: SidebarProps) {
     onWifiChange, onVCardChange, onLithophaneChange,
     onBarcodeChange, onNameplateChange, onMapChange, onMagnetChange, onMountingChange,
     onExportChange, onColorsChange, onExport, onTemplateApply,
-    isExporting,
+    isExporting, buildPlateWidth, buildPlateHeight,
   } = props;
 
   const [showTemplates, setShowTemplates] = useState(false);
   const [collapsed, setCollapsed] = useState(false);
+  const [mapPickerExpanded, setMapPickerExpanded] = useState(false);
 
   const isDual = layout === 'dual';
   const isMap = config.generator === 'map';
+  const wideMap = isMap && mapPickerExpanded;
   const showModel = config.generator !== 'lithophane';
 
   if (collapsed) {
@@ -135,7 +139,7 @@ export function Sidebar(props: SidebarProps) {
         <TemplatesPanel onApply={onTemplateApply} onClose={() => setShowTemplates(false)} />
       )}
 
-      <aside className={`${isMap ? (isDual ? 'w-[480px] min-w-[480px]' : 'w-[480px] min-w-[480px]') : isDual ? 'w-[300px] min-w-[300px]' : 'w-[380px] min-w-[380px]'} h-full bg-gray-800 border-r border-gray-700 flex flex-col overflow-hidden transition-all`}>
+      <aside className={`${wideMap ? 'w-[680px] min-w-[680px]' : isDual ? 'w-[300px] min-w-[300px]' : 'w-[380px] min-w-[380px]'} h-full bg-gray-800 border-r border-gray-700 flex flex-col overflow-hidden transition-all duration-300`}>
         {/* Header */}
         <div className="px-4 py-3 border-b border-gray-700 flex items-center justify-between gap-2">
           <div className="min-w-0">
@@ -193,7 +197,7 @@ export function Sidebar(props: SidebarProps) {
             {config.generator === 'lithophane' && <LithophaneSettings config={config.lithophane} onChange={onLithophaneChange} />}
             {config.generator === 'barcode' && <BarcodeSettings config={config.barcode} onChange={onBarcodeChange} />}
             {config.generator === 'nameplate' && <NameplateSettings config={config.nameplate} onChange={onNameplateChange} />}
-            {config.generator === 'map' && <MapSettings config={config.map} onChange={onMapChange} />}
+            {config.generator === 'map' && <MapSettings config={config.map} onChange={onMapChange} onMapPickerExpandedChange={setMapPickerExpanded} />}
           </SectionHeader>
 
           {/* Model section always right under generator settings */}
@@ -224,7 +228,13 @@ export function Sidebar(props: SidebarProps) {
           {!isDual && (
             <>
               <SectionHeader title="Base Plate" defaultOpen>
-                <BaseSettings base={config.base} onChange={onBaseChange} />
+                <BaseSettings
+                  base={config.base}
+                  onChange={onBaseChange}
+                  buildPlateWidth={buildPlateWidth}
+                  buildPlateHeight={buildPlateHeight}
+                  showPlatePresets={config.generator === 'lithophane' || config.generator === 'map'}
+                />
               </SectionHeader>
               <SectionHeader title="Border Frame" defaultOpen>
                 <BorderSettings base={config.base} onChange={onBaseChange} />

@@ -15,6 +15,7 @@ interface ViewToolbarProps {
   onToggleDarkMode: () => void;
   onToggleFullscreen: () => void;
   onBuildPlateChange: (index: number) => void;
+  onCustomBuildPlateChange?: (width: number, height: number) => void;
   onUndo: () => void;
   onRedo: () => void;
   canUndo: boolean;
@@ -36,6 +37,7 @@ export function ViewToolbar({
   onToggleDarkMode,
   onToggleFullscreen,
   onBuildPlateChange,
+  onCustomBuildPlateChange,
   onUndo,
   onRedo,
   canUndo,
@@ -160,9 +162,32 @@ export function ViewToolbar({
             </option>
           ))}
         </select>
-        <span className={`text-[10px] ${darkMode ? 'text-gray-500' : 'text-gray-400'} whitespace-nowrap`}>
-          {buildPlates[buildPlateIndex].width}×{buildPlates[buildPlateIndex].height}mm
-        </span>
+        {buildPlates[buildPlateIndex].custom ? (
+          <span className="flex items-center gap-0.5">
+            <input
+              type="number"
+              value={buildPlates[buildPlateIndex].width}
+              onChange={(e) => onCustomBuildPlateChange?.(Number(e.target.value), buildPlates[buildPlateIndex].height)}
+              className={`w-10 text-[10px] text-center rounded bg-transparent border ${darkMode ? 'border-gray-600 text-gray-300' : 'border-gray-300 text-gray-600'} focus:outline-none focus:border-blue-500`}
+              min={50}
+              max={500}
+            />
+            <span className={`text-[10px] ${darkMode ? 'text-gray-500' : 'text-gray-400'}`}>×</span>
+            <input
+              type="number"
+              value={buildPlates[buildPlateIndex].height}
+              onChange={(e) => onCustomBuildPlateChange?.(buildPlates[buildPlateIndex].width, Number(e.target.value))}
+              className={`w-10 text-[10px] text-center rounded bg-transparent border ${darkMode ? 'border-gray-600 text-gray-300' : 'border-gray-300 text-gray-600'} focus:outline-none focus:border-blue-500`}
+              min={50}
+              max={500}
+            />
+            <span className={`text-[10px] ${darkMode ? 'text-gray-500' : 'text-gray-400'}`}>mm</span>
+          </span>
+        ) : (
+          <span className={`text-[10px] ${darkMode ? 'text-gray-500' : 'text-gray-400'} whitespace-nowrap`}>
+            {buildPlates[buildPlateIndex].width}×{buildPlates[buildPlateIndex].height}mm
+          </span>
+        )}
       </div>
 
       {/* Undo / Redo */}

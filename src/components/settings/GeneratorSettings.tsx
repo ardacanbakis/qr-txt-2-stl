@@ -447,7 +447,7 @@ const MAP_MODE_OPTIONS = [
 ];
 
 const SKYLINE_PRESETS: { value: string; label: string; lat: number; lng: number; radius: number }[] = [
-  { value: 'custom', label: 'Custom Location', lat: 37.8107, lng: 27.2704, radius: 500 },
+  { value: 'custom', label: 'Custom Location', lat: 37.7837, lng: 27.266, radius: 500 },
   { value: 'istanbul', label: 'Istanbul', lat: 41.0082, lng: 28.9784, radius: 800 },
   { value: 'new-york', label: 'New York (Manhattan)', lat: 40.7580, lng: -73.9855, radius: 600 },
   { value: 'paris', label: 'Paris', lat: 48.8566, lng: 2.3522, radius: 700 },
@@ -464,10 +464,12 @@ export function MapSettings({
   config,
   onChange,
   loading,
+  onMapPickerExpandedChange,
 }: {
   config: MapConfig;
   onChange: (u: Partial<MapConfig>) => void;
   loading?: boolean;
+  onMapPickerExpandedChange?: (expanded: boolean) => void;
 }) {
   const handlePreset = (v: string) => {
     const preset = SKYLINE_PRESETS.find(p => p.value === v);
@@ -502,6 +504,7 @@ export function MapSettings({
         lng={config.lng}
         radius={config.radius}
         onChange={onChange}
+        onExpandedChange={onMapPickerExpandedChange}
       />
       <div className="grid grid-cols-2 gap-2">
         <div className="flex flex-col gap-1">

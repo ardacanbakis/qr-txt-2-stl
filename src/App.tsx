@@ -6,6 +6,7 @@ import { FirebasePanel } from './components/layout/FirebasePanel';
 import { WelcomeScreen, useWelcomeScreen } from './components/layout/WelcomeScreen';
 import { useModelConfig } from './hooks/useModelConfig';
 import { exportSTL, exportSeparateParts } from './generators/stl-exporter';
+import { BUILD_PLATES } from './components/preview/buildPlates';
 import type { GeneratedModelRef } from './components/preview/GeneratedModel';
 import type { LayoutMode } from './components/layout/Sidebar';
 
@@ -54,14 +55,19 @@ function App() {
   const modelRef = useRef<GeneratedModelRef>(null);
   const [layout, setLayout] = useState<LayoutMode>('single');
   const [isExporting, setIsExporting] = useState(false);
+  const [buildPlateIndex, setBuildPlateIndex] = useState(0);
+  const [customPlateSize, setCustomPlateSize] = useState({ width: 200, height: 200 });
   const { showWelcome, dismiss: dismissWelcome } = useWelcomeScreen();
+
+  const currentPlate = BUILD_PLATES[buildPlateIndex];
+  const buildPlateWidth = currentPlate.custom ? customPlateSize.width : currentPlate.width;
+  const buildPlateHeight = currentPlate.custom ? customPlateSize.height : currentPlate.height;
 
   const handleExport = useCallback(() => {
     const scene = modelRef.current?.getScene();
     if (!scene || isExporting) return;
 
     setIsExporting(true);
-    // Defer to next tick so the loading spinner renders before the blocking export.
     setTimeout(() => {
       try {
         const baseName = getBaseName(config);
@@ -108,11 +114,23 @@ function App() {
         layout={layout}
         onLayoutChange={setLayout}
         onTemplateApply={applyTemplate}
+        buildPlateWidth={buildPlateWidth}
+        buildPlateHeight={buildPlateHeight}
       />
 
       <main className="flex-1 h-full min-w-0 relative">
-        <Preview3D ref={modelRef} config={config} onUndo={undo} onRedo={redo} canUndo={canUndo} canRedo={canRedo} />
-        {/* Firebase project save/load button — hidden when not configured */}
+        <Preview3D
+          ref={modelRef}
+          config={config}
+          onUndo={undo}
+          onRedo={redo}
+          canUndo={canUndo}
+          canRedo={canRedo}
+          buildPlateIndex={buildPlateIndex}
+          onBuildPlateChange={setBuildPlateIndex}
+          customPlateSize={customPlateSize}
+          onCustomPlateSizeChange={setCustomPlateSize}
+        />
         <div className="absolute top-2 right-2 z-10">
           <FirebasePanel config={config} onLoad={applyTemplate} />
         </div>
@@ -127,6 +145,8 @@ function App() {
           onExportChange={updateExport}
           onExport={handleExport}
           isExporting={isExporting}
+          buildPlateWidth={buildPlateWidth}
+          buildPlateHeight={buildPlateHeight}
         />
       )}
     </div>

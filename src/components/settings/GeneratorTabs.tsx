@@ -37,12 +37,13 @@ const TABS: TabDef[] = [
     ),
   },
   {
-    value: 'spotify',
-    label: 'Spotify',
+    value: 'vcard',
+    label: 'vCard',
     icon: (
       <svg className={iconClass} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2}>
-        <circle cx="12" cy="12" r="9" />
-        <path d="M7 10c3-1 7-1 10 1M7.5 13c2.5-0.6 5.5-0.3 8 1M8 16c2-0.4 4-0.2 6 0.6" />
+        <rect x="3" y="5" width="18" height="14" rx="2" />
+        <circle cx="9" cy="11" r="2" />
+        <path d="M5 17c0-2 2-3 4-3s4 1 4 3M15 9h4M15 13h4" />
       </svg>
     ),
   },
@@ -57,13 +58,12 @@ const TABS: TabDef[] = [
     ),
   },
   {
-    value: 'vcard',
-    label: 'vCard',
+    value: 'spotify',
+    label: 'Spotify',
     icon: (
       <svg className={iconClass} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2}>
-        <rect x="3" y="5" width="18" height="14" rx="2" />
-        <circle cx="9" cy="11" r="2" />
-        <path d="M5 17c0-2 2-3 4-3s4 1 4 3M15 9h4M15 13h4" />
+        <circle cx="12" cy="12" r="9" />
+        <path d="M7 10c3-1 7-1 10 1M7.5 13c2.5-0.6 5.5-0.3 8 1M8 16c2-0.4 4-0.2 6 0.6" />
       </svg>
     ),
   },

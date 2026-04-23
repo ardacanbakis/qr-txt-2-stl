@@ -6,6 +6,9 @@ import { Toggle } from '../shared/Toggle';
 interface BaseSettingsProps {
   base: BaseConfig;
   onChange: (updates: Partial<BaseConfig>) => void;
+  buildPlateWidth?: number;
+  buildPlateHeight?: number;
+  showPlatePresets?: boolean;
 }
 
 const SHAPE_OPTIONS = [
@@ -19,6 +22,8 @@ const EDGE_OPTIONS = [
   { value: 'fillet', label: 'Fillet (rounded)' },
   { value: 'chamfer', label: 'Chamfer (angled)' },
 ];
+
+const PLATE_PERCENTS = [25, 50, 75, 90] as const;
 
 export function BorderSettings({ base, onChange }: BaseSettingsProps) {
   return (
@@ -52,7 +57,7 @@ export function BorderSettings({ base, onChange }: BaseSettingsProps) {
   );
 }
 
-export function BaseSettings({ base, onChange }: BaseSettingsProps) {
+export function BaseSettings({ base, onChange, buildPlateWidth, buildPlateHeight, showPlatePresets }: BaseSettingsProps) {
   return (
     <div className="space-y-3">
       <Select
@@ -61,6 +66,35 @@ export function BaseSettings({ base, onChange }: BaseSettingsProps) {
         options={SHAPE_OPTIONS}
         onChange={v => onChange({ shape: v as BaseShape })}
       />
+
+      {showPlatePresets && buildPlateWidth && buildPlateHeight && (
+        <div className="space-y-1">
+          <label className="text-xs text-gray-400">Build Plate %</label>
+          <div className="flex gap-1.5">
+            {PLATE_PERCENTS.map(pct => {
+              const w = Math.round(buildPlateWidth * pct / 100);
+              const h = Math.round(buildPlateHeight * pct / 100);
+              const isActive = base.width === w && base.height === h;
+              return (
+                <button
+                  key={pct}
+                  onClick={() => onChange(base.shape === 'circle' ? { width: Math.min(w, h), height: Math.min(w, h) } : { width: w, height: h })}
+                  className={`flex-1 py-1.5 text-xs rounded-md border transition-colors ${
+                    isActive
+                      ? 'bg-blue-600 border-blue-500 text-white'
+                      : 'bg-gray-700 border-gray-600 text-gray-300 hover:bg-gray-600 hover:text-white'
+                  }`}
+                >
+                  {pct}%
+                </button>
+              );
+            })}
+          </div>
+          <p className="text-[10px] text-gray-500">
+            of build plate ({buildPlateWidth}×{buildPlateHeight}mm)
+          </p>
+        </div>
+      )}
 
       <Slider
         label={base.shape === 'circle' ? 'Diameter' : 'Width'}
