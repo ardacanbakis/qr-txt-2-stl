@@ -94,11 +94,13 @@ function KeychainTabMesh({ config }: { config: ModelConfig }) {
   const geometry = useMemo(() => {
     if (!config.base.keychainHole) return null;
     return createKeychainTabGeometry(
+      config.base.width,
       config.base.height,
       config.base.keychainHoleDiameter,
       config.base.thickness,
+      config.base.shape,
     );
-  }, [config.base.keychainHole, config.base.height, config.base.keychainHoleDiameter, config.base.thickness]);
+  }, [config.base.keychainHole, config.base.width, config.base.height, config.base.keychainHoleDiameter, config.base.thickness, config.base.shape]);
 
   if (!geometry) return null;
 
@@ -155,20 +157,34 @@ function MagnetHoles({ config }: { config: ModelConfig }) {
     const depth = config.magnets.customDepth;
     const radius = diameter / 2;
     const positions: [number, number][] = [];
+    const isCircle = config.base.shape === 'circle';
 
-    const w = config.base.width / 2 - radius - 2;
-    const h = config.base.height / 2 - radius - 2;
-
-    if (config.magnets.position === 'corners') {
-      const count = Math.min(config.magnets.count, 4);
-      const corners: [number, number][] = [[-w, -h], [w, -h], [w, h], [-w, h]];
-      for (let i = 0; i < count; i++) positions.push(corners[i]);
-    } else if (config.magnets.position === 'edges') {
-      const count = Math.min(config.magnets.count, 4);
-      const edges: [number, number][] = [[0, -h], [w, 0], [0, h], [-w, 0]];
-      for (let i = 0; i < count; i++) positions.push(edges[i]);
+    if (isCircle) {
+      const plateR = Math.min(config.base.width, config.base.height) / 2 - radius - 2;
+      if (config.magnets.position === 'center') {
+        positions.push([0, 0]);
+      } else {
+        const count = Math.min(config.magnets.count, 8);
+        for (let i = 0; i < count; i++) {
+          const angle = (Math.PI * 2 * i) / count - Math.PI / 2;
+          positions.push([Math.cos(angle) * plateR, Math.sin(angle) * plateR]);
+        }
+      }
     } else {
-      positions.push([0, 0]);
+      const w = config.base.width / 2 - radius - 2;
+      const h = config.base.height / 2 - radius - 2;
+
+      if (config.magnets.position === 'corners') {
+        const count = Math.min(config.magnets.count, 4);
+        const corners: [number, number][] = [[-w, -h], [w, -h], [w, h], [-w, h]];
+        for (let i = 0; i < count; i++) positions.push(corners[i]);
+      } else if (config.magnets.position === 'edges') {
+        const count = Math.min(config.magnets.count, 4);
+        const edges: [number, number][] = [[0, -h], [w, 0], [0, h], [-w, 0]];
+        for (let i = 0; i < count; i++) positions.push(edges[i]);
+      } else {
+        positions.push([0, 0]);
+      }
     }
 
     return positions.map(([x, y]) => {
@@ -177,7 +193,7 @@ function MagnetHoles({ config }: { config: ModelConfig }) {
       geo.translate(x, y, -(config.base.thickness / 2) + depth / 2 - 0.01);
       return geo;
     });
-  }, [config.magnets, config.base.width, config.base.height, config.base.thickness]);
+  }, [config.magnets, config.base.width, config.base.height, config.base.thickness, config.base.shape]);
 
   return (
     <>
@@ -199,9 +215,9 @@ function MountingIndicators({ config }: { config: ModelConfig }) {
   const screwGeos = useMemo(() => {
     if (!mounting.screwHoles) return [];
     return createScrewHoleGeometries(
-      base.width, base.height, mounting.screwDiameter, base.thickness, mounting.screwCount,
+      base.width, base.height, mounting.screwDiameter, base.thickness, mounting.screwCount, base.shape,
     );
-  }, [mounting.screwHoles, mounting.screwDiameter, mounting.screwCount, base.width, base.height, base.thickness]);
+  }, [mounting.screwHoles, mounting.screwDiameter, mounting.screwCount, base.width, base.height, base.thickness, base.shape]);
 
   const wallGeo = useMemo(() => {
     if (!mounting.wallMount) return null;

@@ -113,26 +113,57 @@ function createRoundedRectBase(
 
 /** Standalone keychain tab with punched hole for non-keychain base shapes. */
 export function createKeychainTabGeometry(
+  plateWidth: number,
   plateHeight: number,
   holeDiameter: number,
   thickness: number,
+  shape: BaseShape,
 ): THREE.BufferGeometry {
   const holeR = Math.max(1.5, holeDiameter / 2);
   const tabRadius = holeR + 2; // 2mm wall around hole
-  const tabCenterY = tabRadius; // arc center height above plate edge
 
-  const shape = new THREE.Shape();
-  shape.moveTo(-tabRadius, 0);
-  shape.lineTo(tabRadius, 0);
-  shape.lineTo(tabRadius, tabCenterY);
-  shape.absarc(0, tabCenterY, tabRadius, 0, Math.PI, false);
-  shape.lineTo(-tabRadius, 0);
+  if (shape === 'circle') {
+    const plateR = Math.min(plateWidth, plateHeight) / 2;
+    const tabCenterY = tabRadius;
+
+    const tabShape = new THREE.Shape();
+    tabShape.moveTo(-tabRadius, 0);
+    tabShape.lineTo(tabRadius, 0);
+    tabShape.lineTo(tabRadius, tabCenterY);
+    tabShape.absarc(0, tabCenterY, tabRadius, 0, Math.PI, false);
+    tabShape.lineTo(-tabRadius, 0);
+
+    const hole = new THREE.Path();
+    hole.absarc(0, tabCenterY, holeR, 0, Math.PI * 2, false);
+    tabShape.holes.push(hole);
+
+    const geo = new THREE.ExtrudeGeometry(tabShape, {
+      depth: thickness,
+      bevelEnabled: false,
+      curveSegments: 32,
+    });
+
+    geo.translate(0, plateR, 0);
+    geo.computeBoundingBox();
+    const bb = geo.boundingBox!;
+    geo.translate(0, 0, -((bb.max.z + bb.min.z) / 2));
+    return geo;
+  }
+
+  const tabCenterY = tabRadius;
+
+  const tabShape = new THREE.Shape();
+  tabShape.moveTo(-tabRadius, 0);
+  tabShape.lineTo(tabRadius, 0);
+  tabShape.lineTo(tabRadius, tabCenterY);
+  tabShape.absarc(0, tabCenterY, tabRadius, 0, Math.PI, false);
+  tabShape.lineTo(-tabRadius, 0);
 
   const hole = new THREE.Path();
   hole.absarc(0, tabCenterY, holeR, 0, Math.PI * 2, false);
-  shape.holes.push(hole);
+  tabShape.holes.push(hole);
 
-  const geo = new THREE.ExtrudeGeometry(shape, {
+  const geo = new THREE.ExtrudeGeometry(tabShape, {
     depth: thickness,
     bevelEnabled: false,
     curveSegments: 32,
@@ -145,20 +176,35 @@ export function createKeychainTabGeometry(
   return geo;
 }
 
-/** Visual indicator cylinders for screw holes (one per corner position). */
+/** Visual indicator cylinders for screw holes. Circle-aware placement. */
 export function createScrewHoleGeometries(
   plateWidth: number,
   plateHeight: number,
   diameter: number,
   thickness: number,
   count: number,
+  shape: BaseShape = 'rectangle',
 ): THREE.BufferGeometry[] {
   const r = diameter / 2;
   const margin = r + 3;
-  const w = plateWidth / 2 - margin;
-  const h = plateHeight / 2 - margin;
-  const corners: [number, number][] = [[-w, -h], [w, -h], [w, h], [-w, h]];
-  return corners.slice(0, Math.min(count, 4)).map(([x, y]) => {
+  let positions: [number, number][];
+
+  if (shape === 'circle') {
+    const plateR = Math.min(plateWidth, plateHeight) / 2 - margin;
+    const n = Math.min(count, 8);
+    positions = [];
+    for (let i = 0; i < n; i++) {
+      const angle = (Math.PI * 2 * i) / n - Math.PI / 2;
+      positions.push([Math.cos(angle) * plateR, Math.sin(angle) * plateR]);
+    }
+  } else {
+    const w = plateWidth / 2 - margin;
+    const h = plateHeight / 2 - margin;
+    positions = [[-w, -h], [w, -h], [w, h], [-w, h]];
+    positions = positions.slice(0, Math.min(count, 4));
+  }
+
+  return positions.map(([x, y]) => {
     const geo = new THREE.CylinderGeometry(r, r, thickness + 2, 24);
     geo.rotateX(Math.PI / 2);
     geo.translate(x, y, 0);

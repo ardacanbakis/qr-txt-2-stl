@@ -185,6 +185,22 @@ function createRibbonSegment(
 
 // ── Street geometry builder ─────────────────────────────────────────
 
+function clampCoord(
+  x: number,
+  y: number,
+  halfW: number,
+  halfH: number,
+): { x: number; y: number } {
+  return {
+    x: Math.max(-halfW, Math.min(halfW, x)),
+    y: Math.max(-halfH, Math.min(halfH, y)),
+  };
+}
+
+function isOutsideBounds(x: number, y: number, halfW: number, halfH: number): boolean {
+  return Math.abs(x) > halfW + 1 && Math.abs(y) > halfH + 1;
+}
+
 function buildStreetGeometries(
   ways: OverpassWay[],
   nodeMap: Map<number, OverpassNode>,
@@ -192,9 +208,11 @@ function buildStreetGeometries(
   scaleFactor: number,
   zBase: number,
   streetHeight: number,
+  halfW: number,
+  halfH: number,
 ): THREE.BufferGeometry {
   const parts: THREE.BufferGeometry[] = [];
-  const halfWidth = (config.streetWidth * scaleFactor) / 2;
+  const halfWidth = config.streetWidth / 2;
 
   for (const way of ways) {
     const coords: Array<{ x: number; y: number }> = [];
@@ -202,10 +220,13 @@ function buildStreetGeometries(
       const node = nodeMap.get(nid);
       if (!node) continue;
       const local = latLngToLocal(node.lat, node.lon, config.lat, config.lng);
-      coords.push({ x: local.x * scaleFactor, y: local.y * scaleFactor });
+      const scaled = { x: local.x * scaleFactor, y: local.y * scaleFactor };
+      coords.push(clampCoord(scaled.x, scaled.y, halfW, halfH));
     }
 
     for (let i = 0; i < coords.length - 1; i++) {
+      if (isOutsideBounds(coords[i].x, coords[i].y, halfW, halfH) &&
+          isOutsideBounds(coords[i + 1].x, coords[i + 1].y, halfW, halfH)) continue;
       const seg = createRibbonSegment(
         coords[i].x,
         coords[i].y,
@@ -233,6 +254,8 @@ function buildBuildingGeometries(
   scaleFactor: number,
   zBase: number,
   contentHeight: number,
+  halfW: number,
+  halfH: number,
 ): THREE.BufferGeometry {
   const parts: THREE.BufferGeometry[] = [];
 
@@ -242,10 +265,8 @@ function buildBuildingGeometries(
       const node = nodeMap.get(nid);
       if (!node) continue;
       const local = latLngToLocal(node.lat, node.lon, config.lat, config.lng);
-      points.push(new THREE.Vector2(
-        local.x * scaleFactor,
-        local.y * scaleFactor,
-      ));
+      const clamped = clampCoord(local.x * scaleFactor, local.y * scaleFactor, halfW, halfH);
+      points.push(new THREE.Vector2(clamped.x, clamped.y));
     }
 
     // Need at least 3 unique vertices for a polygon
@@ -348,11 +369,14 @@ export async function fetchAndBuildMap(
   }
 
   // Compute scale factor: map the radius extent (in meters) to fit
-  // within the available plate area.
+  // within the available plate area. Use separate axis extents since
+  // the Overpass bbox is rectangular in lat/lng space.
   const availableWidth = plateWidth - borderWidth * 2;
   const availableHeight = plateHeight - borderWidth * 2;
   const mapExtent = config.radius * 2; // diameter in meters
   const scaleFactor = Math.min(availableWidth, availableHeight) / mapExtent;
+  const halfW = availableWidth / 2;
+  const halfH = availableHeight / 2;
 
   // Z positioning: embossed starts at z=0, engraved at z=-contentHeight
   const zBase = embossed ? 0 : -contentHeight;
@@ -370,6 +394,8 @@ export async function fetchAndBuildMap(
       scaleFactor,
       zBase,
       streetHeight,
+      halfW,
+      halfH,
     );
   }
 
@@ -381,6 +407,8 @@ export async function fetchAndBuildMap(
       scaleFactor,
       zBase,
       contentHeight,
+      halfW,
+      halfH,
     );
   }
 

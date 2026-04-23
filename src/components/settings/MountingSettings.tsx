@@ -31,6 +31,11 @@ const MAGNET_POSITION_OPTIONS = [
   { value: 'center', label: 'Center' },
 ];
 
+const MAGNET_POSITION_OPTIONS_CIRCLE = [
+  { value: 'corners', label: 'Around Edge' },
+  { value: 'center', label: 'Center' },
+];
+
 const MAGNET_DIMENSIONS: Record<string, { diameter: number; depth: number }> = {
   '6x3': { diameter: 6, depth: 3 },
   '8x3': { diameter: 8, depth: 3 },
@@ -109,7 +114,7 @@ export function MountingSettings({
           <Select
             label="Position"
             value={magnets.position}
-            options={MAGNET_POSITION_OPTIONS}
+            options={base.shape === 'circle' ? MAGNET_POSITION_OPTIONS_CIRCLE : MAGNET_POSITION_OPTIONS}
             onChange={v => onMagnetChange({ position: v as MagnetPosition })}
           />
           {magnets.position !== 'center' && (
@@ -117,7 +122,7 @@ export function MountingSettings({
               label="Count"
               value={magnets.count}
               min={1}
-              max={8}
+              max={base.shape === 'circle' ? 8 : 8}
               unit=""
               onChange={v => onMagnetChange({ count: v })}
             />
@@ -144,7 +149,7 @@ export function MountingSettings({
             label="Count"
             value={mounting.screwCount}
             min={1}
-            max={4}
+            max={base.shape === 'circle' ? 8 : 4}
             unit=""
             onChange={v => onMountingChange({ screwCount: v })}
           />
