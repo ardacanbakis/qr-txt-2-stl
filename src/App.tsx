@@ -17,7 +17,6 @@ function getBaseName(config: ReturnType<typeof useModelConfig>['config']): strin
     g === 'spotify' ? 'spotify' :
     g === 'wifi' ? config.wifi.ssid :
     g === 'vcard' ? `${config.vcard.firstName}-${config.vcard.lastName}` :
-    g === 'image' ? (config.image.fileName.replace(/\.[^.]+$/, '') || 'image') :
     g === 'lithophane' ? (config.lithophane.fileName.replace(/\.[^.]+$/, '') || 'lithophane') :
     g === 'barcode' ? config.barcode.text :
     g === 'nameplate' ? config.nameplate.primaryText :
@@ -38,7 +37,6 @@ function App() {
     updateSpotify,
     updateWifi,
     updateVCard,
-    updateImage,
     updateLithophane,
     updateBarcode,
     updateNameplate,
@@ -87,7 +85,6 @@ function App() {
     onSpotifyChange: updateSpotify,
     onWifiChange: updateWifi,
     onVCardChange: updateVCard,
-    onImageChange: updateImage,
     onLithophaneChange: updateLithophane,
     onBarcodeChange: updateBarcode,
     onNameplateChange: updateNameplate,

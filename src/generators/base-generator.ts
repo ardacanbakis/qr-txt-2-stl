@@ -15,8 +15,6 @@ export function createBasePlateGeometry(
       return createCircleBase(Math.min(width, height) / 2, thickness, edgeTreatment, filletRadius);
     case 'rounded-rectangle':
       return createRoundedRectBase(width, height, thickness, cornerRadius, edgeTreatment, filletRadius);
-    case 'keychain':
-      return createKeychainBase(width, height, thickness, cornerRadius, edgeTreatment, filletRadius);
     case 'rectangle':
     default:
       return createRectBase(width, height, thickness, edgeTreatment, filletRadius);
@@ -112,52 +110,6 @@ function createRoundedRectBase(
   return centerZ(new THREE.ExtrudeGeometry(shape, { depth, ...bevel }));
 }
 
-function createKeychainBase(
-  width: number,
-  height: number,
-  thickness: number,
-  cornerRadius: number,
-  edgeTreatment: EdgeTreatment,
-  filletRadius: number,
-): THREE.BufferGeometry {
-  const tabRadius = 6;
-  const tabHeight = tabRadius * 2;
-
-  const shape = new THREE.Shape();
-  const w = width / 2;
-  const h = height / 2;
-  const r = Math.min(cornerRadius, Math.min(w, h));
-
-  shape.moveTo(-w + r, -h);
-  shape.lineTo(w - r, -h);
-  shape.quadraticCurveTo(w, -h, w, -h + r);
-  shape.lineTo(w, h - r);
-  shape.quadraticCurveTo(w, h, w - r, h);
-
-  // Tab: rectangular stem + semicircular cap, centered at x=0
-  const tabArcCenterY = h + tabRadius; // arc center above plate
-  shape.lineTo(tabRadius, h);
-  shape.lineTo(tabRadius, tabArcCenterY);
-  shape.absarc(0, tabArcCenterY, tabRadius, 0, Math.PI, false); // centered at x=0
-  shape.lineTo(-tabRadius, h);
-
-  shape.lineTo(-w + r, h);
-  shape.quadraticCurveTo(-w, h, -w, h - r);
-  shape.lineTo(-w, -h + r);
-  shape.quadraticCurveTo(-w, -h, -w + r, -h);
-
-  // Hole punched through tab cap center
-  const holeR = tabRadius - 2;
-  const holePath = new THREE.Path();
-  holePath.absarc(0, tabArcCenterY, holeR, 0, Math.PI * 2, false);
-  shape.holes.push(holePath);
-
-  const bevel = bevelOpts(edgeTreatment, filletRadius, thickness);
-  const depth = bevel.bevelEnabled ? Math.max(0.1, thickness - bevel.bevelThickness * 2) : thickness;
-  const geometry = new THREE.ExtrudeGeometry(shape, { depth, ...bevel, curveSegments: 32 });
-  geometry.translate(0, -tabHeight / 2, 0);
-  return centerZ(geometry);
-}
 
 /** Standalone keychain tab with punched hole for non-keychain base shapes. */
 export function createKeychainTabGeometry(
@@ -302,7 +254,7 @@ function createOutlineShape(
     return s;
   }
 
-  if (shape === 'rounded-rectangle' || shape === 'keychain') {
+  if (shape === 'rounded-rectangle') {
     const r = Math.min(cornerRadius, Math.min(w, h));
     s.moveTo(-w + r, -h);
     s.lineTo(w - r, -h);

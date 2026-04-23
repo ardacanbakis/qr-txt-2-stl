@@ -10,7 +10,6 @@ import type {
   SpotifyConfig,
   WifiCardConfig,
   VCardConfig,
-  ImageConfig,
   LithophaneConfig,
   BarcodeConfig,
   NameplateConfig,
@@ -75,6 +74,7 @@ export function useModelConfig() {
           shape: preset.shape,
           cornerRadius: preset.cornerRadius,
           borderWidth: preset.borderWidth,
+          borderEnabled: preset.borderEnabled,
         },
       };
     });
@@ -106,10 +106,6 @@ export function useModelConfig() {
 
   const updateVCard = useCallback((updates: Partial<VCardConfig>) => {
     setConfig(prev => ({ ...prev, vcard: { ...prev.vcard, ...updates } }));
-  }, [setConfig]);
-
-  const updateImage = useCallback((updates: Partial<ImageConfig>) => {
-    setConfig(prev => ({ ...prev, image: { ...prev.image, ...updates } }));
   }, [setConfig]);
 
   const updateLithophane = useCallback((updates: Partial<LithophaneConfig>) => {
@@ -161,7 +157,6 @@ export function useModelConfig() {
     updateSpotify,
     updateWifi,
     updateVCard,
-    updateImage,
     updateLithophane,
     updateBarcode,
     updateNameplate,

@@ -4,7 +4,6 @@ export type GeneratorType =
   | 'spotify'
   | 'wifi'
   | 'vcard'
-  | 'image'
   | 'lithophane'
   | 'barcode'
   | 'nameplate'
@@ -12,7 +11,7 @@ export type GeneratorType =
 
 export type InputType = 'text' | 'url' | 'wifi' | 'vcard' | 'spotify' | 'label';
 
-export type BaseShape = 'rectangle' | 'rounded-rectangle' | 'circle' | 'keychain';
+export type BaseShape = 'rectangle' | 'rounded-rectangle' | 'circle';
 
 export type ContentMode = 'embossed' | 'engraved';
 
@@ -178,7 +177,6 @@ export interface ModelConfig {
   spotify: SpotifyConfig;
   wifi: WifiCardConfig;
   vcard: VCardConfig;
-  image: ImageConfig;
   lithophane: LithophaneConfig;
   barcode: BarcodeConfig;
   nameplate: NameplateConfig;
@@ -198,7 +196,7 @@ export const DEFAULT_CONFIG: ModelConfig = {
     thickness: 3,
     cornerRadius: 3,
     borderWidth: 3,
-    borderEnabled: true,
+    borderEnabled: false,
     borderHeight: 2,
     keychainHole: false,
     keychainHoleDiameter: 4,
@@ -240,13 +238,6 @@ export const DEFAULT_CONFIG: ModelConfig = {
     organization: '',
     url: '',
     showText: true,
-  },
-  image: {
-    dataUrl: '',
-    fileName: '',
-    threshold: 128,
-    invert: false,
-    resolution: 80,
   },
   lithophane: {
     dataUrl: '',

@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { SectionHeader } from '../shared/SectionHeader';
 import { GeneratorTabs } from '../settings/GeneratorTabs';
-import { BaseSettings } from '../settings/BaseSettings';
+import { BaseSettings, BorderSettings } from '../settings/BaseSettings';
 import { ModelSettings } from '../settings/ModelSettings';
 import { MountingSettings } from '../settings/MountingSettings';
 import { ColorSettings } from '../settings/ColorSettings';
@@ -13,7 +13,6 @@ import {
   SpotifySettings,
   WifiSettings,
   VCardSettings,
-  ImageSettings,
   LithophaneSettings,
   BarcodeSettings,
   NameplateSettings,
@@ -31,7 +30,6 @@ import type {
   SpotifyConfig,
   WifiCardConfig,
   VCardConfig,
-  ImageConfig,
   LithophaneConfig,
   BarcodeConfig,
   NameplateConfig,
@@ -52,7 +50,6 @@ interface SidebarProps {
   onSpotifyChange: (u: Partial<SpotifyConfig>) => void;
   onWifiChange: (u: Partial<WifiCardConfig>) => void;
   onVCardChange: (u: Partial<VCardConfig>) => void;
-  onImageChange: (u: Partial<ImageConfig>) => void;
   onLithophaneChange: (u: Partial<LithophaneConfig>) => void;
   onBarcodeChange: (u: Partial<BarcodeConfig>) => void;
   onNameplateChange: (u: Partial<NameplateConfig>) => void;
@@ -72,7 +69,6 @@ const GENERATOR_LABELS: Record<GeneratorType, string> = {
   spotify: 'Spotify Code',
   wifi: 'WiFi Card',
   vcard: 'Contact Card',
-  image: 'Image',
   lithophane: 'Lithophane',
   barcode: 'Barcode',
   nameplate: 'Nameplate',
@@ -102,7 +98,7 @@ export function Sidebar(props: SidebarProps) {
   const {
     config, layout, onLayoutChange, onGeneratorChange,
     onBaseChange, onContentChange, onTextChange, onSpotifyChange,
-    onWifiChange, onVCardChange, onImageChange, onLithophaneChange,
+    onWifiChange, onVCardChange, onLithophaneChange,
     onBarcodeChange, onNameplateChange, onMapChange, onMagnetChange, onMountingChange,
     onExportChange, onColorsChange, onExport, onTemplateApply,
     isExporting,
@@ -112,8 +108,7 @@ export function Sidebar(props: SidebarProps) {
   const [collapsed, setCollapsed] = useState(false);
 
   const isDual = layout === 'dual';
-  const showBase = config.generator !== 'lithophane';
-  const showModel = config.generator !== 'lithophane' && config.generator !== 'image';
+  const showModel = config.generator !== 'lithophane';
 
   if (collapsed) {
     return (
@@ -194,7 +189,6 @@ export function Sidebar(props: SidebarProps) {
             {config.generator === 'spotify' && <SpotifySettings config={config.spotify} onChange={onSpotifyChange} />}
             {config.generator === 'wifi' && <WifiSettings config={config.wifi} onChange={onWifiChange} />}
             {config.generator === 'vcard' && <VCardSettings config={config.vcard} onChange={onVCardChange} />}
-            {config.generator === 'image' && <ImageSettings config={config.image} onChange={onImageChange} />}
             {config.generator === 'lithophane' && <LithophaneSettings config={config.lithophane} onChange={onLithophaneChange} />}
             {config.generator === 'barcode' && <BarcodeSettings config={config.barcode} onChange={onBarcodeChange} />}
             {config.generator === 'nameplate' && <NameplateSettings config={config.nameplate} onChange={onNameplateChange} />}
@@ -226,10 +220,15 @@ export function Sidebar(props: SidebarProps) {
           )}
 
           {/* Base Plate only in single-sidebar mode (moves to right panel in dual) */}
-          {!isDual && showBase && (
-            <SectionHeader title="Base Plate" defaultOpen>
-              <BaseSettings base={config.base} onChange={onBaseChange} />
-            </SectionHeader>
+          {!isDual && (
+            <>
+              <SectionHeader title="Base Plate" defaultOpen>
+                <BaseSettings base={config.base} onChange={onBaseChange} />
+              </SectionHeader>
+              <SectionHeader title="Border Frame" defaultOpen>
+                <BorderSettings base={config.base} onChange={onBaseChange} />
+              </SectionHeader>
+            </>
           )}
 
           <SectionHeader title="Colors" defaultOpen>

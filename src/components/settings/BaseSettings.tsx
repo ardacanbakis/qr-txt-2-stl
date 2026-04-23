@@ -12,7 +12,6 @@ const SHAPE_OPTIONS = [
   { value: 'rectangle', label: 'Rectangle' },
   { value: 'rounded-rectangle', label: 'Rounded Rectangle' },
   { value: 'circle', label: 'Circle' },
-  { value: 'keychain', label: 'Keychain' },
 ];
 
 const EDGE_OPTIONS = [
@@ -20,6 +19,38 @@ const EDGE_OPTIONS = [
   { value: 'fillet', label: 'Fillet (rounded)' },
   { value: 'chamfer', label: 'Chamfer (angled)' },
 ];
+
+export function BorderSettings({ base, onChange }: BaseSettingsProps) {
+  return (
+    <div className="space-y-3">
+      <Toggle
+        label="Border Frame"
+        checked={base.borderEnabled}
+        onChange={v => onChange({ borderEnabled: v })}
+      />
+      {base.borderEnabled && (
+        <>
+          <Slider
+            label="Frame Width"
+            value={base.borderWidth}
+            min={1}
+            max={10}
+            step={0.5}
+            onChange={v => onChange({ borderWidth: v })}
+          />
+          <Slider
+            label="Frame Height"
+            value={base.borderHeight}
+            min={0.5}
+            max={5}
+            step={0.1}
+            onChange={v => onChange({ borderHeight: v })}
+          />
+        </>
+      )}
+    </div>
+  );
+}
 
 export function BaseSettings({ base, onChange }: BaseSettingsProps) {
   return (
@@ -32,12 +63,12 @@ export function BaseSettings({ base, onChange }: BaseSettingsProps) {
       />
 
       <Slider
-        label="Width"
+        label={base.shape === 'circle' ? 'Diameter' : 'Width'}
         value={base.width}
         min={20}
         max={150}
         step={1}
-        onChange={v => onChange({ width: v })}
+        onChange={v => onChange(base.shape === 'circle' ? { width: v, height: v } : { width: v })}
       />
 
       {base.shape !== 'circle' && (
@@ -60,7 +91,7 @@ export function BaseSettings({ base, onChange }: BaseSettingsProps) {
         onChange={v => onChange({ thickness: v })}
       />
 
-      {(base.shape === 'rounded-rectangle' || base.shape === 'keychain') && (
+      {(base.shape === 'rounded-rectangle') && (
         <Slider
           label="Corner Radius"
           value={base.cornerRadius}
@@ -71,31 +102,14 @@ export function BaseSettings({ base, onChange }: BaseSettingsProps) {
         />
       )}
 
-      <Toggle
-        label="Border Frame"
-        checked={base.borderEnabled}
-        onChange={v => onChange({ borderEnabled: v })}
-      />
-
       <Slider
-        label="Border Width"
+        label="Content Padding"
         value={base.borderWidth}
         min={1}
         max={10}
         step={0.5}
         onChange={v => onChange({ borderWidth: v })}
       />
-
-      {base.borderEnabled && (
-        <Slider
-          label="Border Height"
-          value={base.borderHeight}
-          min={0.5}
-          max={5}
-          step={0.1}
-          onChange={v => onChange({ borderHeight: v })}
-        />
-      )}
 
       <Select
         label="Edge Treatment"

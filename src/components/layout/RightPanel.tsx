@@ -1,5 +1,5 @@
 import { SectionHeader } from '../shared/SectionHeader';
-import { BaseSettings } from '../settings/BaseSettings';
+import { BaseSettings, BorderSettings } from '../settings/BaseSettings';
 import { MountingSettings } from '../settings/MountingSettings';
 import { Toggle } from '../shared/Toggle';
 import type {
@@ -29,17 +29,18 @@ export function RightPanel({
   onExport,
   isExporting,
 }: RightPanelProps) {
-  const showBase = config.generator !== 'lithophane';
-  const showMounting = config.generator !== 'lithophane' && config.generator !== 'image';
+  const showMounting = config.generator !== 'lithophane';
 
   return (
     <aside className="w-[280px] min-w-[280px] h-full bg-gray-800 border-l border-gray-700 flex flex-col overflow-hidden">
       <div className="flex-1 overflow-y-auto">
-        {showBase && (
-          <SectionHeader title="Base Plate" defaultOpen>
-            <BaseSettings base={config.base} onChange={onBaseChange} />
-          </SectionHeader>
-        )}
+        <SectionHeader title="Base Plate" defaultOpen>
+          <BaseSettings base={config.base} onChange={onBaseChange} />
+        </SectionHeader>
+
+        <SectionHeader title="Border Frame" defaultOpen>
+          <BorderSettings base={config.base} onChange={onBaseChange} />
+        </SectionHeader>
 
         {showMounting && (
           <SectionHeader title="Mounting" defaultOpen>

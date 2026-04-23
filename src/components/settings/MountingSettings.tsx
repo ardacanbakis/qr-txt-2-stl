@@ -47,13 +47,11 @@ export function MountingSettings({
 }: MountingSettingsProps) {
   return (
     <div className="space-y-3">
-      {base.shape !== 'keychain' && (
-        <>
-          <Toggle
-            label="Keychain Hole"
-            checked={base.keychainHole}
-            onChange={v => onBaseChange({ keychainHole: v })}
-          />
+      <Toggle
+        label="Keychain Hole"
+        checked={base.keychainHole}
+        onChange={v => onBaseChange({ keychainHole: v })}
+      />
           {base.keychainHole && (
             <div className="pl-1">
               <NumberInput
@@ -66,8 +64,6 @@ export function MountingSettings({
               />
             </div>
           )}
-        </>
-      )}
 
       <Toggle
         label="Magnet Holes"

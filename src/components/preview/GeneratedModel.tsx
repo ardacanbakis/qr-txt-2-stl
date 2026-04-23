@@ -13,7 +13,7 @@ import {
 import { buildTextGeometry, isItalic } from '../../generators/text-generator';
 import { createSpotifyGeometryFromSvg, fetchSpotifySvg, parseSpotifyUri, type SpotifyGeometries } from '../../generators/spotify-generator';
 import { encodeBarcode, createBarcodeGeometry } from '../../generators/barcode-generator';
-import { loadImagePixels, createImageSilhouetteGeometry, type PixelGrid } from '../../generators/image-generator';
+import { loadImagePixels, type PixelGrid } from '../../generators/image-generator';
 import { createLithophaneGeometry } from '../../generators/lithophane-generator';
 import type { ModelConfig, FontStyle } from '../../types/model';
 
@@ -654,14 +654,13 @@ function BarcodeGeneratorGroup({ config }: { config: ModelConfig }) {
   );
 }
 
-// --- Image / Silhouette Generator ---
+// --- Shared image pixel loader (used by lithophane) ---
 
 function useImagePixels(dataUrl: string, resolution: number): PixelGrid | null {
   const [pixels, setPixels] = useState<PixelGrid | null>(null);
 
   useEffect(() => {
     if (!dataUrl) {
-      // Clear asynchronously to avoid cascading renders inside the effect.
       Promise.resolve().then(() => setPixels(null));
       return;
     }
@@ -677,33 +676,7 @@ function useImagePixels(dataUrl: string, resolution: number): PixelGrid | null {
   return pixels;
 }
 
-function ImageGeneratorGroup({ config }: { config: ModelConfig }) {
-  const embossed = config.content.mode === 'embossed';
-  const pixels = useImagePixels(config.image.dataUrl, config.image.resolution);
-
-  const geometry = useMemo(() => {
-    if (!pixels) return new THREE.BufferGeometry();
-    return createImageSilhouetteGeometry(
-      pixels,
-      config.base.width,
-      config.base.height,
-      config.base.borderWidth,
-      config.content.contentHeight,
-      config.image.threshold,
-      config.image.invert,
-      embossed,
-    );
-  }, [pixels, config.base.width, config.base.height, config.base.borderWidth, config.content.contentHeight, config.image.threshold, config.image.invert, embossed]);
-
-  return (
-    <mesh position={[0, 0, contentZ(config.base, config.content, embossed)]} userData={{ part: 'content' }}>
-      <primitive object={geometry} attach="geometry" />
-      <meshStandardMaterial color={config.colors.content} roughness={0.3} metalness={0.2} />
-    </mesh>
-  );
-}
-
-// --- Lithophane Generator (replaces base with the lithophane volume) ---
+// --- Lithophane Generator ---
 
 function LithophaneGeneratorGroup({ config }: { config: ModelConfig }) {
   const pixels = useImagePixels(config.lithophane.dataUrl, config.lithophane.resolution);
@@ -720,10 +693,12 @@ function LithophaneGeneratorGroup({ config }: { config: ModelConfig }) {
     );
   }, [pixels, config.base.width, config.base.height, config.lithophane.minThickness, config.lithophane.maxThickness, config.lithophane.invert]);
 
+  const z = config.base.thickness / 2;
+
   return (
-    <mesh position={[0, 0, 0]} userData={{ part: 'base' }}>
+    <mesh position={[0, 0, z]} userData={{ part: 'content' }}>
       <primitive object={geometry} attach="geometry" />
-      <meshStandardMaterial color={config.colors.base} roughness={0.5} metalness={0.05} />
+      <meshStandardMaterial color={config.colors.content || config.colors.base} roughness={0.5} metalness={0.05} />
     </mesh>
   );
 }
@@ -732,66 +707,106 @@ function LithophaneGeneratorGroup({ config }: { config: ModelConfig }) {
 
 function useMapGeometries(config: ModelConfig) {
   const [geometries, setGeometries] = useState<{ streets: THREE.BufferGeometry; buildings: THREE.BufferGeometry } | null>(null);
+  const [loading, setLoading] = useState(false);
+  const abortRef = useRef<AbortController | null>(null);
+  const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(() => {
     if (config.generator !== 'map') {
       setGeometries(null);
+      setLoading(false);
       return;
     }
 
-    let cancelled = false;
+    if (debounceRef.current) clearTimeout(debounceRef.current);
+    if (abortRef.current) abortRef.current.abort();
 
-    import('../../generators/map-generator').then(async (mod) => {
-      try {
-        const result = await mod.fetchAndBuildMap(
-          config.map,
-          config.base.width,
-          config.base.height,
-          config.base.borderWidth,
-          config.content.contentHeight,
-          config.content.mode === 'embossed',
-        );
-        if (!cancelled) {
-          setGeometries({ streets: result.streets, buildings: result.buildings });
+    setLoading(true);
+
+    debounceRef.current = setTimeout(() => {
+      const controller = new AbortController();
+      abortRef.current = controller;
+
+      import('../../generators/map-generator').then(async (mod) => {
+        try {
+          const result = await mod.fetchAndBuildMap(
+            config.map,
+            config.base.width,
+            config.base.height,
+            config.base.borderWidth,
+            config.content.contentHeight,
+            config.content.mode === 'embossed',
+            controller.signal,
+          );
+          if (!controller.signal.aborted) {
+            setGeometries({ streets: result.streets, buildings: result.buildings });
+            setLoading(false);
+          }
+        } catch {
+          if (!controller.signal.aborted) {
+            setGeometries(null);
+            setLoading(false);
+          }
         }
-      } catch {
-        if (!cancelled) setGeometries(null);
-      }
-    });
+      });
+    }, 800);
 
-    return () => { cancelled = true; };
+    return () => {
+      if (debounceRef.current) clearTimeout(debounceRef.current);
+      if (abortRef.current) abortRef.current.abort();
+    };
   }, [
     config.generator, config.map, config.base.width, config.base.height,
     config.base.borderWidth, config.content.contentHeight, config.content.mode,
   ]);
 
-  return geometries;
+  return { geometries, loading };
+}
+
+function MapLoadingIndicator({ config }: { config: ModelConfig }) {
+  const meshRef = useRef<THREE.Mesh>(null);
+  const z = config.base.thickness / 2 + 3;
+
+  useEffect(() => {
+    let frameId: number;
+    const animate = () => {
+      if (meshRef.current) {
+        meshRef.current.rotation.z += 0.03;
+      }
+      frameId = requestAnimationFrame(animate);
+    };
+    frameId = requestAnimationFrame(animate);
+    return () => cancelAnimationFrame(frameId);
+  }, []);
+
+  return (
+    <mesh ref={meshRef} position={[0, 0, z]} userData={{ part: 'ignore' }}>
+      <torusGeometry args={[4, 0.5, 8, 32, Math.PI * 1.5]} />
+      <meshStandardMaterial color="#3b82f6" roughness={0.3} metalness={0.2} />
+    </mesh>
+  );
 }
 
 function MapGeneratorGroup({ config }: { config: ModelConfig }) {
   const embossed = config.content.mode === 'embossed';
-  const geos = useMapGeometries(config);
+  const { geometries: geos, loading } = useMapGeometries(config);
   const z = contentZ(config.base, config.content, embossed);
-
-  if (!geos) {
-    return (
-      <mesh position={[0, 0, z]} userData={{ part: 'content' }}>
-        <boxGeometry args={[2, 2, config.content.contentHeight]} />
-        <meshStandardMaterial color={config.colors.content} roughness={0.3} metalness={0.2} />
-      </mesh>
-    );
-  }
 
   return (
     <>
-      <mesh position={[0, 0, z]} userData={{ part: 'content' }}>
-        <primitive object={geos.streets} attach="geometry" />
-        <meshStandardMaterial color={config.colors.content} roughness={0.3} metalness={0.2} />
-      </mesh>
-      <mesh position={[0, 0, z]} userData={{ part: 'secondary' }}>
-        <primitive object={geos.buildings} attach="geometry" />
-        <meshStandardMaterial color={config.colors.secondary} roughness={0.3} metalness={0.2} />
-      </mesh>
+      {loading && <MapLoadingIndicator config={config} />}
+      {geos && (
+        <>
+          <mesh position={[0, 0, z]} userData={{ part: 'content' }}>
+            <primitive object={geos.streets} attach="geometry" />
+            <meshStandardMaterial color={config.colors.content} roughness={0.3} metalness={0.2} />
+          </mesh>
+          <mesh position={[0, 0, z]} userData={{ part: 'secondary' }}>
+            <primitive object={geos.buildings} attach="geometry" />
+            <meshStandardMaterial color={config.colors.secondary} roughness={0.3} metalness={0.2} />
+          </mesh>
+        </>
+      )}
     </>
   );
 }
@@ -806,15 +821,6 @@ export const GeneratedModel = forwardRef<GeneratedModelRef, GeneratedModelProps>
       getScene: () => groupRef.current,
     }));
 
-    // Lithophane has no separate base plate; it is the base.
-    if (config.generator === 'lithophane') {
-      return (
-        <group ref={groupRef}>
-          <LithophaneGeneratorGroup config={config} />
-        </group>
-      );
-    }
-
     return (
       <group ref={groupRef}>
         <BaseMesh config={config} />
@@ -828,7 +834,7 @@ export const GeneratedModel = forwardRef<GeneratedModelRef, GeneratedModelProps>
         {config.generator === 'spotify' && <SpotifyGeneratorGroup config={config} />}
         {config.generator === 'wifi' && <WifiGeneratorGroup config={config} />}
         {config.generator === 'vcard' && <VCardGeneratorGroup config={config} />}
-        {config.generator === 'image' && <ImageGeneratorGroup config={config} />}
+        {config.generator === 'lithophane' && <LithophaneGeneratorGroup config={config} />}
         {config.generator === 'barcode' && <BarcodeGeneratorGroup config={config} />}
         {config.generator === 'nameplate' && <NameplateGeneratorGroup config={config} />}
         {config.generator === 'map' && <MapGeneratorGroup config={config} />}

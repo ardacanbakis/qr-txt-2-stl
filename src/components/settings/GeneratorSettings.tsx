@@ -4,7 +4,6 @@ import type {
   SpotifyConfig,
   WifiCardConfig,
   VCardConfig,
-  ImageConfig,
   LithophaneConfig,
   BarcodeConfig,
   NameplateConfig,
@@ -18,6 +17,7 @@ import type {
 import { Select } from '../shared/Select';
 import { Slider } from '../shared/Slider';
 import { Toggle } from '../shared/Toggle';
+import { MapPicker } from './MapPicker';
 
 const FONT_STYLE_OPTIONS = [
   { value: 'regular', label: 'Regular' },
@@ -279,66 +279,6 @@ export function VCardSettings({
   );
 }
 
-// ---- Image settings ----
-
-export function ImageSettings({
-  config,
-  onChange,
-}: {
-  config: ImageConfig;
-  onChange: (u: Partial<ImageConfig>) => void;
-}) {
-  const handleFile = (file: File) => {
-    const reader = new FileReader();
-    reader.onload = () => {
-      onChange({ dataUrl: reader.result as string, fileName: file.name });
-    };
-    reader.readAsDataURL(file);
-  };
-
-  return (
-    <div className="space-y-3">
-      <div className="flex flex-col gap-1">
-        <Label>Image File</Label>
-        <label className="bg-gray-700 hover:bg-gray-600 text-gray-200 text-sm rounded-md px-3 py-2 border border-gray-600 cursor-pointer text-center">
-          {config.fileName || 'Choose image (PNG, JPG, SVG)...'}
-          <input
-            type="file"
-            accept="image/*"
-            className="hidden"
-            onChange={(e) => {
-              const f = e.target.files?.[0];
-              if (f) handleFile(f);
-            }}
-          />
-        </label>
-      </div>
-      <Slider
-        label="Threshold"
-        value={config.threshold}
-        min={0}
-        max={255}
-        step={1}
-        unit=""
-        onChange={(v) => onChange({ threshold: v })}
-      />
-      <Slider
-        label="Resolution"
-        value={config.resolution}
-        min={20}
-        max={200}
-        step={5}
-        unit="px"
-        onChange={(v) => onChange({ resolution: v })}
-      />
-      <Toggle label="Invert" checked={config.invert} onChange={(v) => onChange({ invert: v })} />
-      <p className="text-xs text-gray-500 italic">
-        Dark pixels become extruded shapes on the plate. Increase resolution for finer detail.
-      </p>
-    </div>
-  );
-}
-
 // ---- Lithophane settings ----
 
 export function LithophaneSettings({
@@ -393,14 +333,15 @@ export function LithophaneSettings({
         label="Resolution"
         value={config.resolution}
         min={40}
-        max={200}
-        step={5}
+        max={400}
+        step={10}
         unit="px"
         onChange={(v) => onChange({ resolution: v })}
       />
       <Toggle label="Invert Brightness" checked={config.invert} onChange={(v) => onChange({ invert: v })} />
       <p className="text-xs text-gray-500 italic">
         Best with high-contrast black & white photos. Print in white filament and backlight to see the image.
+        Higher resolution produces more detail but increases generation time.
       </p>
     </div>
   );
@@ -505,9 +446,11 @@ const SKYLINE_PRESETS: { value: string; label: string; lat: number; lng: number;
 export function MapSettings({
   config,
   onChange,
+  loading,
 }: {
   config: MapConfig;
   onChange: (u: Partial<MapConfig>) => void;
+  loading?: boolean;
 }) {
   const handlePreset = (v: string) => {
     const preset = SKYLINE_PRESETS.find(p => p.value === v);
@@ -537,12 +480,18 @@ export function MapSettings({
         options={MAP_MODE_OPTIONS}
         onChange={(v) => onChange({ mode: v as MapMode })}
       />
+      <MapPicker
+        lat={config.lat}
+        lng={config.lng}
+        radius={config.radius}
+        onChange={onChange}
+      />
       <div className="grid grid-cols-2 gap-2">
         <div className="flex flex-col gap-1">
           <Label>Latitude</Label>
           <TextInput
             value={String(config.lat)}
-            onChange={(v) => { const n = parseFloat(v); if (!isNaN(n)) onChange({ lat: n }); }}
+            onChange={(v) => { const n = parseFloat(v); if (!isNaN(n)) onChange({ lat: n, skylinePreset: 'custom' }); }}
             placeholder="41.0082"
           />
         </div>
@@ -550,7 +499,7 @@ export function MapSettings({
           <Label>Longitude</Label>
           <TextInput
             value={String(config.lng)}
-            onChange={(v) => { const n = parseFloat(v); if (!isNaN(n)) onChange({ lng: n }); }}
+            onChange={(v) => { const n = parseFloat(v); if (!isNaN(n)) onChange({ lng: n, skylinePreset: 'custom' }); }}
             placeholder="28.9784"
           />
         </div>
@@ -594,9 +543,17 @@ export function MapSettings({
           onChange={(v) => onChange({ terrainExaggeration: v })}
         />
       )}
+      {loading && (
+        <div className="flex items-center gap-2 text-xs text-blue-400">
+          <svg className="w-3.5 h-3.5 animate-spin" fill="none" viewBox="0 0 24 24">
+            <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+            <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
+          </svg>
+          Fetching map data...
+        </div>
+      )}
       <p className="text-xs text-gray-500 italic">
         Uses OpenStreetMap data. Select a city preset or enter coordinates manually.
-        Fetches streets, buildings, and elevation data for the selected area.
       </p>
     </div>
   );
