@@ -260,8 +260,8 @@ export const DEFAULT_CONFIG: ModelConfig = {
     secondarySize: 4,
   },
   map: {
-    lat: 41.0082,
-    lng: 28.9784,
+    lat: 37.8107,
+    lng: 27.2704,
     zoom: 15,
     radius: 500,
     mode: 'streets',

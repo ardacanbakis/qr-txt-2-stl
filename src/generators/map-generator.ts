@@ -85,7 +85,7 @@ async function fetchOsmData(
   const bbox = computeBBox(config.lat, config.lng, config.radius);
 
   const query = `
-[out:json][timeout:30];
+[out:json][timeout:60];
 (
   way["highway"](${bbox});
   way["building"](${bbox});
@@ -380,7 +380,7 @@ export async function fetchAndBuildMap(
 
   // Z positioning: embossed starts at z=0, engraved at z=-contentHeight
   const zBase = embossed ? 0 : -contentHeight;
-  const streetHeight = contentHeight * 0.3;
+  const streetHeight = config.mode === 'streets-only' ? contentHeight : contentHeight * 0.3;
 
   // Build geometries based on the selected mode
   let streets = new THREE.BufferGeometry();

@@ -823,20 +823,23 @@ function MapGeneratorGroup({ config }: { config: ModelConfig }) {
   const { geometries: geos, loading } = useMapGeometries(config);
   const z = contentZ(config.base, config.content, embossed);
 
+  const hasStreets = geos?.streets && geos.streets.attributes.position && geos.streets.attributes.position.count > 0;
+  const hasBuildings = geos?.buildings && geos.buildings.attributes.position && geos.buildings.attributes.position.count > 0;
+
   return (
     <>
       {loading && <MapLoadingIndicator config={config} />}
-      {geos && (
-        <>
-          <mesh position={[0, 0, z]} userData={{ part: 'content' }}>
-            <primitive object={geos.streets} attach="geometry" />
-            <meshStandardMaterial color={config.colors.content} roughness={0.3} metalness={0.2} />
-          </mesh>
-          <mesh position={[0, 0, z]} userData={{ part: 'secondary' }}>
-            <primitive object={geos.buildings} attach="geometry" />
-            <meshStandardMaterial color={config.colors.secondary} roughness={0.3} metalness={0.2} />
-          </mesh>
-        </>
+      {hasStreets && (
+        <mesh position={[0, 0, z]} userData={{ part: 'content' }}>
+          <primitive object={geos!.streets} attach="geometry" />
+          <meshStandardMaterial color={config.colors.content} roughness={0.3} metalness={0.2} />
+        </mesh>
+      )}
+      {hasBuildings && (
+        <mesh position={[0, 0, z]} userData={{ part: 'secondary' }}>
+          <primitive object={geos!.buildings} attach="geometry" />
+          <meshStandardMaterial color={config.colors.secondary} roughness={0.3} metalness={0.2} />
+        </mesh>
       )}
     </>
   );

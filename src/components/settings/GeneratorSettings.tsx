@@ -447,7 +447,7 @@ const MAP_MODE_OPTIONS = [
 ];
 
 const SKYLINE_PRESETS: { value: string; label: string; lat: number; lng: number; radius: number }[] = [
-  { value: 'custom', label: 'Custom Location', lat: 0, lng: 0, radius: 500 },
+  { value: 'custom', label: 'Custom Location', lat: 37.8107, lng: 27.2704, radius: 500 },
   { value: 'istanbul', label: 'Istanbul', lat: 41.0082, lng: 28.9784, radius: 800 },
   { value: 'new-york', label: 'New York (Manhattan)', lat: 40.7580, lng: -73.9855, radius: 600 },
   { value: 'paris', label: 'Paris', lat: 48.8566, lng: 2.3522, radius: 700 },
@@ -525,7 +525,7 @@ export function MapSettings({
         label="Radius"
         value={config.radius}
         min={100}
-        max={2000}
+        max={5000}
         step={50}
         unit="m"
         onChange={(v) => onChange({ radius: v })}
