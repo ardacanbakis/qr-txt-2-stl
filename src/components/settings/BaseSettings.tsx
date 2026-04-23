@@ -66,7 +66,7 @@ export function BaseSettings({ base, onChange }: BaseSettingsProps) {
         label={base.shape === 'circle' ? 'Diameter' : 'Width'}
         value={base.width}
         min={20}
-        max={150}
+        max={350}
         step={1}
         onChange={v => onChange(base.shape === 'circle' ? { width: v, height: v } : { width: v })}
       />
@@ -76,7 +76,7 @@ export function BaseSettings({ base, onChange }: BaseSettingsProps) {
           label="Height"
           value={base.height}
           min={20}
-          max={150}
+          max={350}
           step={1}
           onChange={v => onChange({ height: v })}
         />

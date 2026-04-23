@@ -141,7 +141,7 @@ export interface NameplateConfig {
   secondarySize: number;
 }
 
-export type MapMode = 'streets' | 'terrain' | 'combined';
+export type MapMode = 'streets' | 'streets-only' | 'terrain' | 'combined';
 
 export interface MapConfig {
   lat: number;

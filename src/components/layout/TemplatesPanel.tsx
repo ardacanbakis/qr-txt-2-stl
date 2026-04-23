@@ -40,7 +40,7 @@ const TEMPLATES: Template[] = [
     icon: '🎵',
     config: {
       generator: 'spotify',
-      base: { ...DEFAULT_CONFIG.base, shape: 'rounded-rectangle', width: 45, height: 55, thickness: 3, cornerRadius: 4, borderWidth: 3, keychainHole: true, edgeTreatment: 'fillet', filletRadius: 0.8 },
+      base: { ...DEFAULT_CONFIG.base, shape: 'rounded-rectangle', width: 100, height: 40, thickness: 3, cornerRadius: 4, borderWidth: 5, borderEnabled: true, keychainHole: true, edgeTreatment: 'fillet', filletRadius: 0.8 },
       content: { ...DEFAULT_CONFIG.content, contentHeight: 1.2, mode: 'embossed' },
       spotify: { ...DEFAULT_CONFIG.spotify, showLogo: true },
     },

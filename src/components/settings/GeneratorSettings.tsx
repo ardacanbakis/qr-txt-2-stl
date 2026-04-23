@@ -425,6 +425,7 @@ export function NameplateSettings({
 
 const MAP_MODE_OPTIONS = [
   { value: 'streets', label: 'Streets & Buildings' },
+  { value: 'streets-only', label: 'Streets Only' },
   { value: 'terrain', label: 'Terrain Relief' },
   { value: 'combined', label: 'Combined' },
 ];
@@ -513,16 +514,18 @@ export function MapSettings({
         unit="m"
         onChange={(v) => onChange({ radius: v })}
       />
-      {(config.mode === 'streets' || config.mode === 'combined') && (
+      {(config.mode === 'streets' || config.mode === 'streets-only' || config.mode === 'combined') && (
         <>
-          <Slider
-            label="Building Height"
-            value={config.buildingHeight}
-            min={0.5}
-            max={8}
-            step={0.5}
-            onChange={(v) => onChange({ buildingHeight: v })}
-          />
+          {config.mode !== 'streets-only' && (
+            <Slider
+              label="Building Height"
+              value={config.buildingHeight}
+              min={0.5}
+              max={8}
+              step={0.5}
+              onChange={(v) => onChange({ buildingHeight: v })}
+            />
+          )}
           <Slider
             label="Street Width"
             value={config.streetWidth}

@@ -110,7 +110,7 @@ const TABS: TabDef[] = [
 
 export function GeneratorTabs({ value, onChange }: GeneratorTabsProps) {
   return (
-    <div className="grid grid-cols-5 gap-1.5 p-2">
+    <div className="grid grid-cols-3 gap-1.5 p-2">
       {TABS.map((tab) => {
         const active = tab.value === value;
         return (

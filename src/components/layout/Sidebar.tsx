@@ -108,6 +108,7 @@ export function Sidebar(props: SidebarProps) {
   const [collapsed, setCollapsed] = useState(false);
 
   const isDual = layout === 'dual';
+  const isMap = config.generator === 'map';
   const showModel = config.generator !== 'lithophane';
 
   if (collapsed) {
@@ -134,7 +135,7 @@ export function Sidebar(props: SidebarProps) {
         <TemplatesPanel onApply={onTemplateApply} onClose={() => setShowTemplates(false)} />
       )}
 
-      <aside className={`${isDual ? 'w-[300px] min-w-[300px]' : 'w-[380px] min-w-[380px]'} h-full bg-gray-800 border-r border-gray-700 flex flex-col overflow-hidden transition-all`}>
+      <aside className={`${isDual ? 'w-[300px] min-w-[300px]' : isMap ? 'w-[480px] min-w-[480px]' : 'w-[380px] min-w-[380px]'} h-full bg-gray-800 border-r border-gray-700 flex flex-col overflow-hidden transition-all`}>
         {/* Header */}
         <div className="px-4 py-3 border-b border-gray-700 flex items-center justify-between gap-2">
           <div className="min-w-0">

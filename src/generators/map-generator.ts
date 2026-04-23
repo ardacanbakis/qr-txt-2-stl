@@ -362,7 +362,7 @@ export async function fetchAndBuildMap(
   let streets = new THREE.BufferGeometry();
   let buildings = new THREE.BufferGeometry();
 
-  if (config.mode === 'streets' || config.mode === 'combined') {
+  if (config.mode === 'streets' || config.mode === 'streets-only' || config.mode === 'combined') {
     streets = buildStreetGeometries(
       highwayWays,
       nodeMap,

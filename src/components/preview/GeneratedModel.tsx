@@ -37,6 +37,23 @@ function baseZ(content: ModelConfig['content']): number {
   return content.mode === 'embossed' ? 0 : content.contentHeight / 2;
 }
 
+function contentPadding(base: ModelConfig['base']): number {
+  const extra = base.borderEnabled ? 1.5 : 0;
+  return base.borderWidth + extra;
+}
+
+function contentArea(base: ModelConfig['base']): { w: number; h: number } {
+  const pad = contentPadding(base);
+  let w = base.width - pad * 2;
+  let h = base.height - pad * 2;
+  if (base.shape === 'circle') {
+    const inscribed = Math.min(w, h) * 0.707;
+    w = inscribed;
+    h = inscribed;
+  }
+  return { w: Math.max(w, 1), h: Math.max(h, 1) };
+}
+
 function fontUrl(style: FontStyle): string {
   const bold = style === 'bold' || style === 'bold-italic';
   return `${import.meta.env.BASE_URL}fonts/${bold ? 'helvetiker_bold' : 'helvetiker_regular'}.typeface.json`;
@@ -227,6 +244,8 @@ function MountingIndicators({ config }: { config: ModelConfig }) {
 // --- QR Generator ---
 
 function QRGeneratorGroup({ config }: { config: ModelConfig }) {
+  const { w: areaW, h: areaH } = contentArea(config.base);
+
   const geometry = useMemo(() => {
     const text = config.content.text || 'Hello';
     try {
@@ -234,9 +253,9 @@ function QRGeneratorGroup({ config }: { config: ModelConfig }) {
       return createQRGeometry(
         matrix,
         moduleCount,
-        config.base.width,
-        config.base.height,
-        config.base.borderWidth,
+        areaW,
+        areaH,
+        0,
         config.content.contentHeight,
         config.content.mode === 'embossed',
       );
@@ -245,9 +264,9 @@ function QRGeneratorGroup({ config }: { config: ModelConfig }) {
       return createQRGeometry(
         matrix,
         moduleCount,
-        config.base.width,
-        config.base.height,
-        config.base.borderWidth,
+        areaW,
+        areaH,
+        0,
         config.content.contentHeight,
         config.content.mode === 'embossed',
       );
@@ -257,14 +276,12 @@ function QRGeneratorGroup({ config }: { config: ModelConfig }) {
     config.content.errorCorrection,
     config.content.contentHeight,
     config.content.mode,
-    config.base.width,
-    config.base.height,
-    config.base.borderWidth,
+    areaW,
+    areaH,
   ]);
 
   const embossed = config.content.mode === 'embossed';
-  const labelBand = config.content.showQrLabel ? Math.min(config.base.height * 0.15, 9) : 0;
-  const availW = config.base.width - config.base.borderWidth * 2;
+  const labelBand = config.content.showQrLabel ? Math.min(areaH * 0.15, 9) : 0;
   const z = contentZ(config.base, config.content, embossed);
 
   return (
@@ -279,9 +296,9 @@ function QRGeneratorGroup({ config }: { config: ModelConfig }) {
           fontStyle="regular"
           size={3.5}
           depth={config.content.contentHeight}
-          maxWidth={availW}
+          maxWidth={areaW}
           maxHeight={labelBand * 0.75}
-          position={[0, -config.base.height / 2 + labelBand / 2 + config.base.borderWidth / 2, z]}
+          position={[0, -areaH / 2 + labelBand / 2, z]}
           color={config.colors.text}
           part="text"
         />
@@ -342,8 +359,7 @@ function TextContent({
 function TextGeneratorGroup({ config }: { config: ModelConfig }) {
   const embossed = config.content.mode === 'embossed';
   const depth = config.content.contentHeight;
-  const availW = config.base.width - config.base.borderWidth * 2;
-  const availH = config.base.height - config.base.borderWidth * 2;
+  const { w: areaW, h: areaH } = contentArea(config.base);
 
   return (
     <TextContent
@@ -351,8 +367,8 @@ function TextGeneratorGroup({ config }: { config: ModelConfig }) {
       fontStyle={config.text.fontStyle}
       size={config.text.size}
       depth={depth}
-      maxWidth={availW}
-      maxHeight={availH}
+      maxWidth={areaW}
+      maxHeight={areaH}
       position={[0, 0, contentZ(config.base, config.content, embossed)]}
       color={config.colors.text}
       part="text"
@@ -396,6 +412,7 @@ function useSpotifySvg(url: string): string | null {
 function SpotifyGeneratorGroup({ config }: { config: ModelConfig }) {
   const embossed = config.content.mode === 'embossed';
   const svgText = useSpotifySvg(config.spotify.url);
+  const { w: areaW, h: areaH } = contentArea(config.base);
 
   const geometries = useMemo((): SpotifyGeometries => {
     const empty: SpotifyGeometries = {
@@ -406,9 +423,9 @@ function SpotifyGeneratorGroup({ config }: { config: ModelConfig }) {
     try {
       return createSpotifyGeometryFromSvg(
         svgText,
-        config.base.width,
-        config.base.height,
-        config.base.borderWidth,
+        areaW,
+        areaH,
+        0,
         config.content.contentHeight,
         config.spotify.showLogo,
         embossed,
@@ -418,9 +435,8 @@ function SpotifyGeneratorGroup({ config }: { config: ModelConfig }) {
     }
   }, [
     svgText,
-    config.base.width,
-    config.base.height,
-    config.base.borderWidth,
+    areaW,
+    areaH,
     config.content.contentHeight,
     config.spotify.showLogo,
     embossed,
@@ -449,8 +465,8 @@ function SpotifyGeneratorGroup({ config }: { config: ModelConfig }) {
 function WifiGeneratorGroup({ config }: { config: ModelConfig }) {
   const embossed = config.content.mode === 'embossed';
   const depth = config.content.contentHeight;
-  const textBandHeight = config.wifi.showText ? Math.min(config.base.height * 0.2, 12) : 0;
-  const availW = config.base.width - config.base.borderWidth * 2;
+  const { w: areaW, h: areaH } = contentArea(config.base);
+  const textBandHeight = config.wifi.showText ? Math.min(areaH * 0.2, 12) : 0;
 
   const wifiString = useMemo(
     () => generateWifiString(config.wifi.ssid, config.wifi.password, config.wifi.encryption, config.wifi.hidden),
@@ -460,9 +476,8 @@ function WifiGeneratorGroup({ config }: { config: ModelConfig }) {
   const qrGeometry = useMemo(() => {
     try {
       const { matrix, moduleCount } = generateQRMatrix(wifiString || 'WIFI', 'M');
-      const qrHeight = config.base.height - textBandHeight - config.base.borderWidth * 2;
-      const qrSize = Math.min(qrHeight, availW);
-      // Use a virtual plate matched to QR size so createQRGeometry centers correctly.
+      const qrH = areaH - textBandHeight;
+      const qrSize = Math.min(qrH, areaW);
       return createQRGeometry(
         matrix,
         moduleCount,
@@ -476,7 +491,7 @@ function WifiGeneratorGroup({ config }: { config: ModelConfig }) {
       const { matrix, moduleCount } = generateQRMatrix('WIFI', 'M');
       return createQRGeometry(matrix, moduleCount, 20, 20, 0, depth, embossed);
     }
-  }, [wifiString, config.base.height, config.base.borderWidth, availW, depth, embossed, textBandHeight]);
+  }, [wifiString, areaW, areaH, depth, embossed, textBandHeight]);
 
   const qrYOffset = textBandHeight / 2;
   const z = contentZ(config.base, config.content, embossed);
@@ -493,9 +508,9 @@ function WifiGeneratorGroup({ config }: { config: ModelConfig }) {
           fontStyle="bold"
           size={4}
           depth={depth}
-          maxWidth={availW}
+          maxWidth={areaW}
           maxHeight={textBandHeight * 0.8}
-          position={[0, -config.base.height / 2 + textBandHeight / 2 + config.base.borderWidth / 2, z]}
+          position={[0, -areaH / 2 + textBandHeight / 2, z]}
           color={config.colors.text}
           part="text"
         />
@@ -509,8 +524,8 @@ function WifiGeneratorGroup({ config }: { config: ModelConfig }) {
 function VCardGeneratorGroup({ config }: { config: ModelConfig }) {
   const embossed = config.content.mode === 'embossed';
   const depth = config.content.contentHeight;
-  const textBandHeight = config.vcard.showText ? Math.min(config.base.height * 0.22, 14) : 0;
-  const availW = config.base.width - config.base.borderWidth * 2;
+  const { w: areaW, h: areaH } = contentArea(config.base);
+  const textBandHeight = config.vcard.showText ? Math.min(areaH * 0.22, 14) : 0;
 
   const vcardString = useMemo(
     () =>
@@ -528,14 +543,14 @@ function VCardGeneratorGroup({ config }: { config: ModelConfig }) {
   const qrGeometry = useMemo(() => {
     try {
       const { matrix, moduleCount } = generateQRMatrix(vcardString || 'CONTACT', 'M');
-      const qrHeight = config.base.height - textBandHeight - config.base.borderWidth * 2;
-      const qrSize = Math.min(qrHeight, availW);
+      const qrH = areaH - textBandHeight;
+      const qrSize = Math.min(qrH, areaW);
       return createQRGeometry(matrix, moduleCount, qrSize, qrSize, 0, depth, embossed);
     } catch {
       const { matrix, moduleCount } = generateQRMatrix('CONTACT', 'M');
       return createQRGeometry(matrix, moduleCount, 20, 20, 0, depth, embossed);
     }
-  }, [vcardString, config.base.height, config.base.borderWidth, availW, depth, embossed, textBandHeight]);
+  }, [vcardString, areaW, areaH, depth, embossed, textBandHeight]);
 
   const qrYOffset = textBandHeight / 2;
   const z = contentZ(config.base, config.content, embossed);
@@ -553,9 +568,9 @@ function VCardGeneratorGroup({ config }: { config: ModelConfig }) {
           fontStyle="bold"
           size={5}
           depth={depth}
-          maxWidth={availW}
+          maxWidth={areaW}
           maxHeight={textBandHeight * 0.8}
-          position={[0, -config.base.height / 2 + textBandHeight / 2 + config.base.borderWidth / 2, z]}
+          position={[0, -areaH / 2 + textBandHeight / 2, z]}
           color={config.colors.text}
           part="text"
         />
@@ -569,8 +584,8 @@ function VCardGeneratorGroup({ config }: { config: ModelConfig }) {
 function NameplateGeneratorGroup({ config }: { config: ModelConfig }) {
   const embossed = config.content.mode === 'embossed';
   const depth = config.content.contentHeight;
-  const availW = config.base.width - config.base.borderWidth * 2;
-  const halfH = config.base.height / 2 - config.base.borderWidth;
+  const { w: areaW, h: areaH } = contentArea(config.base);
+  const halfH = areaH / 2;
   const z = contentZ(config.base, config.content, embossed);
 
   const hasSecondary = config.nameplate.secondaryText.length > 0;
@@ -585,7 +600,7 @@ function NameplateGeneratorGroup({ config }: { config: ModelConfig }) {
         fontStyle={config.nameplate.fontStyle}
         size={config.nameplate.primarySize}
         depth={depth}
-        maxWidth={availW}
+        maxWidth={areaW}
         maxHeight={halfH * 0.9}
         position={[0, primaryY, z]}
         color={config.colors.text}
@@ -597,7 +612,7 @@ function NameplateGeneratorGroup({ config }: { config: ModelConfig }) {
           fontStyle="regular"
           size={config.nameplate.secondarySize}
           depth={depth}
-          maxWidth={availW}
+          maxWidth={areaW}
           maxHeight={halfH * 0.5}
           position={[0, secondaryY, z]}
           color={config.colors.secondary}
@@ -613,23 +628,23 @@ function NameplateGeneratorGroup({ config }: { config: ModelConfig }) {
 function BarcodeGeneratorGroup({ config }: { config: ModelConfig }) {
   const embossed = config.content.mode === 'embossed';
   const depth = config.content.contentHeight;
-  const reservedBottom = config.barcode.showText ? Math.min(config.base.height * 0.18, 10) : 0;
+  const { w: areaW, h: areaH } = contentArea(config.base);
+  const reservedBottom = config.barcode.showText ? Math.min(areaH * 0.18, 10) : 0;
 
   const barcodeGeometry = useMemo(() => {
     const pattern = encodeBarcode(config.barcode.text || 'HELLO', config.barcode.format);
     return createBarcodeGeometry(
       pattern,
-      config.base.width,
-      config.base.height,
-      config.base.borderWidth,
+      areaW,
+      areaH,
+      0,
       reservedBottom,
       depth,
       embossed,
     );
-  }, [config.barcode.text, config.barcode.format, config.base.width, config.base.height, config.base.borderWidth, depth, embossed, reservedBottom]);
+  }, [config.barcode.text, config.barcode.format, areaW, areaH, depth, embossed, reservedBottom]);
 
   const z = contentZ(config.base, config.content, embossed);
-  const availW = config.base.width - config.base.borderWidth * 2;
 
   return (
     <>
@@ -643,9 +658,9 @@ function BarcodeGeneratorGroup({ config }: { config: ModelConfig }) {
           fontStyle="regular"
           size={3.5}
           depth={depth}
-          maxWidth={availW}
+          maxWidth={areaW}
           maxHeight={reservedBottom * 0.7}
-          position={[0, -config.base.height / 2 + reservedBottom / 2 + config.base.borderWidth / 2, z]}
+          position={[0, -areaH / 2 + reservedBottom / 2, z]}
           color={config.colors.text}
           part="text"
         />
