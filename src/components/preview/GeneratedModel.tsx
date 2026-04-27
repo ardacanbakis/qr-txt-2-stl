@@ -50,6 +50,13 @@ function contentArea(base: ModelConfig['base']): { w: number; h: number } {
     const inscribed = Math.min(w, h) * 0.707;
     w = inscribed;
     h = inscribed;
+  } else if (base.shape === 'hexagon') {
+    const inscribed = Math.min(w, h) * 0.866;
+    w = inscribed;
+    h = inscribed;
+  } else if (base.shape === 'triangle') {
+    w = w * 0.55;
+    h = h * 0.45;
   }
   return { w: Math.max(w, 1), h: Math.max(h, 1) };
 }
@@ -157,10 +164,12 @@ function MagnetHoles({ config }: { config: ModelConfig }) {
     const depth = config.magnets.customDepth;
     const radius = diameter / 2;
     const positions: [number, number][] = [];
-    const isCircle = config.base.shape === 'circle';
+    const useCircularLayout = config.base.shape === 'circle' || config.base.shape === 'hexagon' || config.base.shape === 'triangle';
 
-    if (isCircle) {
-      const plateR = Math.min(config.base.width, config.base.height) / 2 - radius - 2;
+    if (useCircularLayout) {
+      const plateR = config.base.shape === 'triangle'
+        ? Math.min(config.base.width, config.base.height) / 2 * 0.45 - radius
+        : Math.min(config.base.width, config.base.height) / 2 - radius - 2;
       if (config.magnets.position === 'center') {
         positions.push([0, 0]);
       } else {

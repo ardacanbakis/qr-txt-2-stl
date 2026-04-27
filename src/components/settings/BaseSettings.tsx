@@ -15,6 +15,8 @@ const SHAPE_OPTIONS = [
   { value: 'rectangle', label: 'Rectangle' },
   { value: 'rounded-rectangle', label: 'Rounded Rectangle' },
   { value: 'circle', label: 'Circle' },
+  { value: 'triangle', label: 'Triangle' },
+  { value: 'hexagon', label: 'Hexagon' },
 ];
 
 const EDGE_OPTIONS = [
@@ -78,7 +80,7 @@ export function BaseSettings({ base, onChange, buildPlateWidth, buildPlateHeight
               return (
                 <button
                   key={pct}
-                  onClick={() => onChange(base.shape === 'circle' ? { width: Math.min(w, h), height: Math.min(w, h) } : { width: w, height: h })}
+                  onClick={() => onChange((base.shape === 'circle' || base.shape === 'hexagon') ? { width: Math.min(w, h), height: Math.min(w, h) } : { width: w, height: h })}
                   className={`flex-1 py-1.5 text-xs rounded-md border transition-colors ${
                     isActive
                       ? 'bg-blue-600 border-blue-500 text-white'
@@ -97,15 +99,15 @@ export function BaseSettings({ base, onChange, buildPlateWidth, buildPlateHeight
       )}
 
       <Slider
-        label={base.shape === 'circle' ? 'Diameter' : 'Width'}
+        label={base.shape === 'circle' ? 'Diameter' : base.shape === 'hexagon' ? 'Size' : 'Width'}
         value={base.width}
         min={20}
         max={350}
         step={1}
-        onChange={v => onChange(base.shape === 'circle' ? { width: v, height: v } : { width: v })}
+        onChange={v => onChange((base.shape === 'circle' || base.shape === 'hexagon') ? { width: v, height: v } : { width: v })}
       />
 
-      {base.shape !== 'circle' && (
+      {base.shape !== 'circle' && base.shape !== 'hexagon' && (
         <Slider
           label="Height"
           value={base.height}

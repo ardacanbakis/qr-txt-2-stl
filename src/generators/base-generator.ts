@@ -15,6 +15,10 @@ export function createBasePlateGeometry(
       return createCircleBase(Math.min(width, height) / 2, thickness, edgeTreatment, filletRadius);
     case 'rounded-rectangle':
       return createRoundedRectBase(width, height, thickness, cornerRadius, edgeTreatment, filletRadius);
+    case 'triangle':
+      return createTriangleBase(width, height, thickness, edgeTreatment, filletRadius);
+    case 'hexagon':
+      return createHexagonBase(width, height, thickness, edgeTreatment, filletRadius);
     case 'rectangle':
     default:
       return createRectBase(width, height, thickness, edgeTreatment, filletRadius);
@@ -113,6 +117,50 @@ function createRoundedRectBase(
 }
 
 
+function createTriangleBase(
+  width: number,
+  height: number,
+  thickness: number,
+  edgeTreatment: EdgeTreatment,
+  filletRadius: number,
+): THREE.BufferGeometry {
+  const shape = new THREE.Shape();
+  const w = width / 2;
+  const h = height / 2;
+  shape.moveTo(0, h);
+  shape.lineTo(w, -h);
+  shape.lineTo(-w, -h);
+  shape.closePath();
+
+  const bevel = bevelOpts(edgeTreatment, filletRadius, thickness);
+  const depth = bevel.bevelEnabled ? Math.max(0.1, thickness - bevel.bevelThickness * 2) : thickness;
+  return centerZ(new THREE.ExtrudeGeometry(shape, { depth, ...bevel }));
+}
+
+function createHexagonBase(
+  width: number,
+  height: number,
+  thickness: number,
+  edgeTreatment: EdgeTreatment,
+  filletRadius: number,
+): THREE.BufferGeometry {
+  const shape = new THREE.Shape();
+  const rx = width / 2;
+  const ry = height / 2;
+  for (let i = 0; i < 6; i++) {
+    const angle = (Math.PI / 3) * i - Math.PI / 2;
+    const x = Math.cos(angle) * rx;
+    const y = Math.sin(angle) * ry;
+    if (i === 0) shape.moveTo(x, y);
+    else shape.lineTo(x, y);
+  }
+  shape.closePath();
+
+  const bevel = bevelOpts(edgeTreatment, filletRadius, thickness);
+  const depth = bevel.bevelEnabled ? Math.max(0.1, thickness - bevel.bevelThickness * 2) : thickness;
+  return centerZ(new THREE.ExtrudeGeometry(shape, { depth, ...bevel }));
+}
+
 /** Standalone keychain tab with punched hole for non-keychain base shapes. */
 export function createKeychainTabGeometry(
   plateWidth: number,
@@ -191,7 +239,7 @@ export function createScrewHoleGeometries(
   const margin = r + 3;
   let positions: [number, number][];
 
-  if (shape === 'circle') {
+  if (shape === 'circle' || shape === 'hexagon') {
     const plateR = Math.min(plateWidth, plateHeight) / 2 - margin;
     const n = Math.min(count, 8);
     positions = [];
@@ -199,6 +247,11 @@ export function createScrewHoleGeometries(
       const angle = (Math.PI * 2 * i) / n - Math.PI / 2;
       positions.push([Math.cos(angle) * plateR, Math.sin(angle) * plateR]);
     }
+  } else if (shape === 'triangle') {
+    const w = plateWidth / 2 - margin;
+    const h = plateHeight / 2 - margin;
+    positions = [[0, h * 0.5], [w * 0.6, -h * 0.6], [-w * 0.6, -h * 0.6]];
+    positions = positions.slice(0, Math.min(count, 3));
   } else {
     const w = plateWidth / 2 - margin;
     const h = plateHeight / 2 - margin;
@@ -313,6 +366,26 @@ function createOutlineShape(
     s.quadraticCurveTo(-w, h, -w, h - r);
     s.lineTo(-w, -h + r);
     s.quadraticCurveTo(-w, -h, -w + r, -h);
+    return s;
+  }
+
+  if (shape === 'triangle') {
+    s.moveTo(0, h);
+    s.lineTo(w, -h);
+    s.lineTo(-w, -h);
+    s.closePath();
+    return s;
+  }
+
+  if (shape === 'hexagon') {
+    for (let i = 0; i < 6; i++) {
+      const angle = (Math.PI / 3) * i - Math.PI / 2;
+      const x = Math.cos(angle) * w;
+      const y = Math.sin(angle) * h;
+      if (i === 0) s.moveTo(x, y);
+      else s.lineTo(x, y);
+    }
+    s.closePath();
     return s;
   }
 

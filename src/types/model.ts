@@ -11,7 +11,7 @@ export type GeneratorType =
 
 export type InputType = 'text' | 'url' | 'wifi' | 'vcard' | 'spotify' | 'label';
 
-export type BaseShape = 'rectangle' | 'rounded-rectangle' | 'circle';
+export type BaseShape = 'rectangle' | 'rounded-rectangle' | 'circle' | 'triangle' | 'hexagon';
 
 export type ContentMode = 'embossed' | 'engraved';
 
@@ -195,9 +195,9 @@ export const DEFAULT_CONFIG: ModelConfig = {
     height: 60,
     thickness: 3,
     cornerRadius: 3,
-    borderWidth: 3,
+    borderWidth: 2,
     borderEnabled: false,
-    borderHeight: 2,
+    borderHeight: 1.4,
     keychainHole: false,
     keychainHoleDiameter: 4,
     edgeTreatment: 'none',
@@ -275,8 +275,8 @@ export const DEFAULT_CONFIG: ModelConfig = {
     size: '6x3',
     customDiameter: 6,
     customDepth: 3,
-    position: 'corners',
-    count: 4,
+    position: 'center',
+    count: 1,
   },
   mounting: {
     screwHoles: false,
