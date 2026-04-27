@@ -11,7 +11,7 @@ export type GeneratorType =
 
 export type InputType = 'text' | 'url' | 'wifi' | 'vcard' | 'spotify' | 'label';
 
-export type BaseShape = 'rectangle' | 'rounded-rectangle' | 'circle' | 'triangle' | 'hexagon';
+export type BaseShape = 'rectangle' | 'rounded-rectangle' | 'circle' | 'pentagon' | 'hexagon';
 
 export type ContentMode = 'embossed' | 'engraved';
 

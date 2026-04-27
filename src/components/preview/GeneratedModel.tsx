@@ -4,11 +4,14 @@ import { useFont } from '@react-three/drei';
 import { generateQRMatrix, createQRGeometry, generateWifiString, generateVCardString } from '../../generators/qr-generator';
 import {
   createBasePlateGeometry,
+  createBasePlateWithRecesses,
   createKeychainTabGeometry,
   createBorderFrameGeometry,
   createScrewHoleGeometries,
   createWallMountGeometry,
   createFridgeMagnetGeometry,
+  magnetMinThickness,
+  type MagnetRecess,
 } from '../../generators/base-generator';
 import { buildTextGeometry, isItalic } from '../../generators/text-generator';
 import { createSpotifyGeometryFromSvg, fetchSpotifySvg, parseSpotifyUri, type SpotifyGeometries } from '../../generators/spotify-generator';
@@ -54,9 +57,10 @@ function contentArea(base: ModelConfig['base']): { w: number; h: number } {
     const inscribed = Math.min(w, h) * 0.866;
     w = inscribed;
     h = inscribed;
-  } else if (base.shape === 'triangle') {
-    w = w * 0.55;
-    h = h * 0.45;
+  } else if (base.shape === 'pentagon') {
+    const inscribed = Math.min(w, h) * 0.809;
+    w = inscribed;
+    h = inscribed;
   }
   return { w: Math.max(w, 1), h: Math.max(h, 1) };
 }
@@ -66,22 +70,81 @@ function fontUrl(style: FontStyle): string {
   return `${import.meta.env.BASE_URL}fonts/${bold ? 'helvetiker_bold' : 'helvetiker_regular'}.typeface.json`;
 }
 
+// --- Magnet position helper ---
+
+function computeMagnetPositions(config: ModelConfig): [number, number][] {
+  if (!config.magnets.enabled) return [];
+  const radius = config.magnets.customDiameter / 2;
+  const positions: [number, number][] = [];
+  const useCircularLayout = config.base.shape === 'circle' || config.base.shape === 'hexagon' || config.base.shape === 'pentagon';
+
+  if (useCircularLayout) {
+    const plateR = Math.min(config.base.width, config.base.height) / 2 - radius - 2;
+    if (config.magnets.position === 'center') {
+      positions.push([0, 0]);
+    } else {
+      const count = Math.min(config.magnets.count, 8);
+      for (let i = 0; i < count; i++) {
+        const angle = (Math.PI * 2 * i) / count - Math.PI / 2;
+        positions.push([Math.cos(angle) * plateR, Math.sin(angle) * plateR]);
+      }
+    }
+  } else {
+    const w = config.base.width / 2 - radius - 2;
+    const h = config.base.height / 2 - radius - 2;
+    if (config.magnets.position === 'corners') {
+      const count = Math.min(config.magnets.count, 4);
+      const corners: [number, number][] = [[-w, -h], [w, -h], [w, h], [-w, h]];
+      for (let i = 0; i < count; i++) positions.push(corners[i]);
+    } else if (config.magnets.position === 'edges') {
+      const count = Math.min(config.magnets.count, 4);
+      const edges: [number, number][] = [[0, -h], [w, 0], [0, h], [-w, 0]];
+      for (let i = 0; i < count; i++) positions.push(edges[i]);
+    } else {
+      positions.push([0, 0]);
+    }
+  }
+  return positions;
+}
+
 // --- Shared BaseMesh ---
 
 function BaseMesh({ config }: { config: ModelConfig }) {
-  const geometry = useMemo(
-    () =>
-      createBasePlateGeometry(
+  const geometry = useMemo(() => {
+    if (config.magnets.enabled) {
+      const positions = computeMagnetPositions(config);
+      const recesses: MagnetRecess[] = positions.map(([x, y]) => ({
+        x, y,
+        radius: config.magnets.customDiameter / 2,
+        depth: config.magnets.customDepth,
+      }));
+      const effectiveThickness = Math.max(config.base.thickness, magnetMinThickness(config.magnets.customDepth));
+      return createBasePlateWithRecesses(
         config.base.shape,
         config.base.width,
         config.base.height,
-        config.base.thickness,
+        effectiveThickness,
         config.base.cornerRadius,
         config.base.edgeTreatment,
         config.base.filletRadius,
-      ),
-    [config.base.shape, config.base.width, config.base.height, config.base.thickness, config.base.cornerRadius, config.base.edgeTreatment, config.base.filletRadius],
-  );
+        recesses,
+      );
+    }
+    return createBasePlateGeometry(
+      config.base.shape,
+      config.base.width,
+      config.base.height,
+      config.base.thickness,
+      config.base.cornerRadius,
+      config.base.edgeTreatment,
+      config.base.filletRadius,
+    );
+  }, [
+    config.base.shape, config.base.width, config.base.height, config.base.thickness,
+    config.base.cornerRadius, config.base.edgeTreatment, config.base.filletRadius,
+    config.magnets.enabled, config.magnets.customDiameter, config.magnets.customDepth,
+    config.magnets.position, config.magnets.count,
+  ]);
 
   return (
     <mesh
@@ -154,52 +217,20 @@ function BorderFrameMesh({ config }: { config: ModelConfig }) {
   );
 }
 
-// --- Magnet holes (visual only) ---
+// --- Magnet holes (visual indicators — actual recesses are built into base plate geometry) ---
 
 function MagnetHoles({ config }: { config: ModelConfig }) {
   const geometries = useMemo(() => {
     if (!config.magnets.enabled) return [];
-
-    const diameter = config.magnets.customDiameter;
+    const positions = computeMagnetPositions(config);
+    const radius = config.magnets.customDiameter / 2;
     const depth = config.magnets.customDepth;
-    const radius = diameter / 2;
-    const positions: [number, number][] = [];
-    const useCircularLayout = config.base.shape === 'circle' || config.base.shape === 'hexagon' || config.base.shape === 'triangle';
-
-    if (useCircularLayout) {
-      const plateR = config.base.shape === 'triangle'
-        ? Math.min(config.base.width, config.base.height) / 2 * 0.45 - radius
-        : Math.min(config.base.width, config.base.height) / 2 - radius - 2;
-      if (config.magnets.position === 'center') {
-        positions.push([0, 0]);
-      } else {
-        const count = Math.min(config.magnets.count, 8);
-        for (let i = 0; i < count; i++) {
-          const angle = (Math.PI * 2 * i) / count - Math.PI / 2;
-          positions.push([Math.cos(angle) * plateR, Math.sin(angle) * plateR]);
-        }
-      }
-    } else {
-      const w = config.base.width / 2 - radius - 2;
-      const h = config.base.height / 2 - radius - 2;
-
-      if (config.magnets.position === 'corners') {
-        const count = Math.min(config.magnets.count, 4);
-        const corners: [number, number][] = [[-w, -h], [w, -h], [w, h], [-w, h]];
-        for (let i = 0; i < count; i++) positions.push(corners[i]);
-      } else if (config.magnets.position === 'edges') {
-        const count = Math.min(config.magnets.count, 4);
-        const edges: [number, number][] = [[0, -h], [w, 0], [0, h], [-w, 0]];
-        for (let i = 0; i < count; i++) positions.push(edges[i]);
-      } else {
-        positions.push([0, 0]);
-      }
-    }
+    const effectiveThickness = Math.max(config.base.thickness, magnetMinThickness(depth));
 
     return positions.map(([x, y]) => {
       const geo = new THREE.CylinderGeometry(radius, radius, depth, 32);
       geo.rotateX(Math.PI / 2);
-      geo.translate(x, y, -(config.base.thickness / 2) + depth / 2 - 0.01);
+      geo.translate(x, y, -(effectiveThickness / 2) + depth / 2 - 0.01);
       return geo;
     });
   }, [config.magnets, config.base.width, config.base.height, config.base.thickness, config.base.shape]);

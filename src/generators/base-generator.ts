@@ -15,14 +15,66 @@ export function createBasePlateGeometry(
       return createCircleBase(Math.min(width, height) / 2, thickness, edgeTreatment, filletRadius);
     case 'rounded-rectangle':
       return createRoundedRectBase(width, height, thickness, cornerRadius, edgeTreatment, filletRadius);
-    case 'triangle':
-      return createTriangleBase(width, height, thickness, edgeTreatment, filletRadius);
+    case 'pentagon':
+      return createPentagonBase(width, height, thickness, edgeTreatment, filletRadius);
     case 'hexagon':
       return createHexagonBase(width, height, thickness, edgeTreatment, filletRadius);
     case 'rectangle':
     default:
       return createRectBase(width, height, thickness, edgeTreatment, filletRadius);
   }
+}
+
+export interface MagnetRecess {
+  x: number;
+  y: number;
+  radius: number;
+  depth: number;
+}
+
+const MAGNET_WALL = 1.2;
+
+export function magnetMinThickness(magnetDepth: number): number {
+  return magnetDepth + MAGNET_WALL;
+}
+
+export function createBasePlateWithRecesses(
+  shape: BaseShape,
+  width: number,
+  height: number,
+  thickness: number,
+  cornerRadius: number,
+  edgeTreatment: EdgeTreatment,
+  filletRadius: number,
+  recesses: MagnetRecess[],
+): THREE.BufferGeometry {
+  if (recesses.length === 0) {
+    return createBasePlateGeometry(shape, width, height, thickness, cornerRadius, edgeTreatment, filletRadius);
+  }
+
+  const maxDepth = Math.max(...recesses.map(r => r.depth));
+  const wallThick = thickness - maxDepth;
+
+  const topOutline = createOutlineShape(shape, width, height, cornerRadius);
+  const topBevel = bevelOpts(edgeTreatment, filletRadius, wallThick);
+  const topDepth = topBevel.bevelEnabled ? Math.max(0.1, wallThick - topBevel.bevelThickness * 2) : wallThick;
+  const topGeo = new THREE.ExtrudeGeometry(topOutline, { depth: topDepth, ...topBevel, curveSegments: 48 });
+
+  const bottomOutline = createOutlineShape(shape, width, height, cornerRadius);
+  for (const recess of recesses) {
+    const hole = new THREE.Path();
+    hole.absarc(recess.x, recess.y, recess.radius, 0, Math.PI * 2, false);
+    bottomOutline.holes.push(hole);
+  }
+  const bottomGeo = new THREE.ExtrudeGeometry(bottomOutline, { depth: maxDepth, bevelEnabled: false, curveSegments: 48 });
+
+  topGeo.translate(0, 0, maxDepth);
+
+  const merged = mergeGeos([bottomGeo, topGeo]);
+  merged.computeBoundingBox();
+  const bb = merged.boundingBox!;
+  merged.translate(0, 0, -((bb.max.z + bb.min.z) / 2));
+  return merged;
 }
 
 function bevelOpts(edgeTreatment: EdgeTreatment, filletRadius: number, thickness: number) {
@@ -117,7 +169,7 @@ function createRoundedRectBase(
 }
 
 
-function createTriangleBase(
+function createPentagonBase(
   width: number,
   height: number,
   thickness: number,
@@ -125,11 +177,15 @@ function createTriangleBase(
   filletRadius: number,
 ): THREE.BufferGeometry {
   const shape = new THREE.Shape();
-  const w = width / 2;
-  const h = height / 2;
-  shape.moveTo(0, h);
-  shape.lineTo(w, -h);
-  shape.lineTo(-w, -h);
+  const rx = width / 2;
+  const ry = height / 2;
+  for (let i = 0; i < 5; i++) {
+    const angle = (Math.PI * 2 / 5) * i - Math.PI / 2;
+    const x = Math.cos(angle) * rx;
+    const y = Math.sin(angle) * ry;
+    if (i === 0) shape.moveTo(x, y);
+    else shape.lineTo(x, y);
+  }
   shape.closePath();
 
   const bevel = bevelOpts(edgeTreatment, filletRadius, thickness);
@@ -239,7 +295,7 @@ export function createScrewHoleGeometries(
   const margin = r + 3;
   let positions: [number, number][];
 
-  if (shape === 'circle' || shape === 'hexagon') {
+  if (shape === 'circle' || shape === 'hexagon' || shape === 'pentagon') {
     const plateR = Math.min(plateWidth, plateHeight) / 2 - margin;
     const n = Math.min(count, 8);
     positions = [];
@@ -247,11 +303,6 @@ export function createScrewHoleGeometries(
       const angle = (Math.PI * 2 * i) / n - Math.PI / 2;
       positions.push([Math.cos(angle) * plateR, Math.sin(angle) * plateR]);
     }
-  } else if (shape === 'triangle') {
-    const w = plateWidth / 2 - margin;
-    const h = plateHeight / 2 - margin;
-    positions = [[0, h * 0.5], [w * 0.6, -h * 0.6], [-w * 0.6, -h * 0.6]];
-    positions = positions.slice(0, Math.min(count, 3));
   } else {
     const w = plateWidth / 2 - margin;
     const h = plateHeight / 2 - margin;
@@ -369,10 +420,14 @@ function createOutlineShape(
     return s;
   }
 
-  if (shape === 'triangle') {
-    s.moveTo(0, h);
-    s.lineTo(w, -h);
-    s.lineTo(-w, -h);
+  if (shape === 'pentagon') {
+    for (let i = 0; i < 5; i++) {
+      const angle = (Math.PI * 2 / 5) * i - Math.PI / 2;
+      const x = Math.cos(angle) * w;
+      const y = Math.sin(angle) * h;
+      if (i === 0) s.moveTo(x, y);
+      else s.lineTo(x, y);
+    }
     s.closePath();
     return s;
   }

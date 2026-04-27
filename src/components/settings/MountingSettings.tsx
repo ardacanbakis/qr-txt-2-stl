@@ -73,7 +73,16 @@ export function MountingSettings({
       <Toggle
         label="Magnet Holes"
         checked={magnets.enabled}
-        onChange={v => onMagnetChange({ enabled: v })}
+        onChange={v => {
+          onMagnetChange({ enabled: v });
+          if (v) {
+            const depth = MAGNET_DIMENSIONS[magnets.size]?.depth ?? magnets.customDepth;
+            const minT = depth + 1.2;
+            if (base.thickness < minT) {
+              onBaseChange({ thickness: Math.round(minT * 10) / 10 });
+            }
+          }
+        }}
       />
       {magnets.enabled && (
         <div className="space-y-2 pl-1">
@@ -86,6 +95,10 @@ export function MountingSettings({
               const dims = MAGNET_DIMENSIONS[size];
               if (dims) {
                 onMagnetChange({ size, customDiameter: dims.diameter, customDepth: dims.depth });
+                const minT = dims.depth + 1.2;
+                if (base.thickness < minT) {
+                  onBaseChange({ thickness: Math.round(minT * 10) / 10 });
+                }
               } else {
                 onMagnetChange({ size });
               }
@@ -107,14 +120,20 @@ export function MountingSettings({
                 min={1}
                 max={10}
                 step={0.5}
-                onChange={v => onMagnetChange({ customDepth: v })}
+                onChange={v => {
+                  onMagnetChange({ customDepth: v });
+                  const minT = v + 1.2;
+                  if (base.thickness < minT) {
+                    onBaseChange({ thickness: Math.round(minT * 10) / 10 });
+                  }
+                }}
               />
             </>
           )}
           <Select
             label="Position"
             value={magnets.position}
-            options={(base.shape === 'circle' || base.shape === 'hexagon' || base.shape === 'triangle') ? MAGNET_POSITION_OPTIONS_CIRCLE : MAGNET_POSITION_OPTIONS}
+            options={(base.shape === 'circle' || base.shape === 'hexagon' || base.shape === 'pentagon') ? MAGNET_POSITION_OPTIONS_CIRCLE : MAGNET_POSITION_OPTIONS}
             onChange={v => onMagnetChange({ position: v as MagnetPosition })}
           />
           {magnets.position !== 'center' && (
@@ -149,7 +168,7 @@ export function MountingSettings({
             label="Count"
             value={mounting.screwCount}
             min={1}
-            max={base.shape === 'circle' || base.shape === 'hexagon' ? 8 : base.shape === 'triangle' ? 3 : 4}
+            max={base.shape === 'circle' || base.shape === 'hexagon' || base.shape === 'pentagon' ? 8 : 4}
             unit=""
             onChange={v => onMountingChange({ screwCount: v })}
           />
