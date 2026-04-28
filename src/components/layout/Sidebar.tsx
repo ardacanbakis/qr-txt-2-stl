@@ -60,6 +60,7 @@ interface SidebarProps {
   onColorsChange: (u: Partial<ColorConfig>) => void;
   onExport: () => void;
   onTemplateApply: (t: Partial<ModelConfig>) => void;
+  onShowWelcome?: () => void;
   isExporting?: boolean;
   buildPlateWidth?: number;
   buildPlateHeight?: number;
@@ -102,7 +103,7 @@ export function Sidebar(props: SidebarProps) {
     onBaseChange, onContentChange, onTextChange, onSpotifyChange,
     onWifiChange, onVCardChange, onLithophaneChange,
     onBarcodeChange, onNameplateChange, onMapChange, onMagnetChange, onMountingChange,
-    onExportChange, onColorsChange, onExport, onTemplateApply,
+    onExportChange, onColorsChange, onExport, onTemplateApply, onShowWelcome,
     isExporting, buildPlateWidth, buildPlateHeight,
   } = props;
 
@@ -141,11 +142,18 @@ export function Sidebar(props: SidebarProps) {
 
       <aside className={`${wideMap ? 'w-[680px] min-w-[680px]' : isDual ? 'w-[300px] min-w-[300px]' : 'w-[380px] min-w-[380px]'} h-full bg-gray-800 border-r border-gray-700 flex flex-col overflow-hidden transition-all duration-300`}>
         {/* Header */}
-        <div className="px-4 py-3 border-b border-gray-700 flex items-center justify-between gap-2">
-          <div className="min-w-0">
-            <h1 className="text-base font-bold text-white tracking-tight">STL Generator</h1>
-            <p className="text-xs text-gray-400 mt-0.5 hidden sm:block">3D-printable STL files</p>
-          </div>
+        <div className="px-4 py-2 border-b border-gray-700 flex items-center justify-between gap-2">
+          <button
+            onClick={onShowWelcome}
+            className="min-w-0 flex items-center gap-2 hover:opacity-80 transition-opacity"
+            title="Back to home"
+          >
+            <img
+              src={`${import.meta.env.BASE_URL}logo.png`}
+              alt="STL Smith"
+              className="h-9 w-auto object-contain"
+            />
+          </button>
           <div className="flex items-center gap-1 shrink-0">
             {/* Templates */}
             <button

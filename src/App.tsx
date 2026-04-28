@@ -53,11 +53,11 @@ function App() {
   } = useModelConfig();
 
   const modelRef = useRef<GeneratedModelRef>(null);
-  const [layout, setLayout] = useState<LayoutMode>('single');
+  const [layout, setLayout] = useState<LayoutMode>('dual');
   const [isExporting, setIsExporting] = useState(false);
   const [buildPlateIndex, setBuildPlateIndex] = useState(0);
   const [customPlateSize, setCustomPlateSize] = useState({ width: 200, height: 200 });
-  const { showWelcome, dismiss: dismissWelcome } = useWelcomeScreen();
+  const { showWelcome, dismiss: dismissWelcome, show: showWelcomeScreen } = useWelcomeScreen();
 
   const currentPlate = BUILD_PLATES[buildPlateIndex];
   const buildPlateWidth = currentPlate.custom ? customPlateSize.width : currentPlate.width;
@@ -116,6 +116,7 @@ function App() {
         onTemplateApply={applyTemplate}
         buildPlateWidth={buildPlateWidth}
         buildPlateHeight={buildPlateHeight}
+        onShowWelcome={showWelcomeScreen}
       />
 
       <main className="flex-1 h-full min-w-0 relative">
