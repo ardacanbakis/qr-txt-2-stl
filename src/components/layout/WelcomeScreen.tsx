@@ -22,7 +22,7 @@ interface WelcomeScreenProps {
   onDismiss: () => void;
 }
 
-function useTheme() {
+export function useTheme() {
   const [dark, setDark] = useState(() => {
     const saved = localStorage.getItem(THEME_KEY);
     if (saved !== null) return saved === 'dark';
@@ -31,6 +31,14 @@ function useTheme() {
 
   useEffect(() => {
     localStorage.setItem(THEME_KEY, dark ? 'dark' : 'light');
+    const href = `${import.meta.env.BASE_URL}${dark ? 'favicon-neon.png' : 'favicon.png'}`;
+    let link = document.querySelector("link[rel='icon']") as HTMLLinkElement | null;
+    if (!link) {
+      link = document.createElement('link');
+      link.rel = 'icon';
+      document.head.appendChild(link);
+    }
+    link.href = href;
   }, [dark]);
 
   return { dark, toggle: () => setDark(d => !d) };
@@ -192,56 +200,262 @@ function Footer({ dark }: { dark: boolean }) {
   );
 }
 
+const WELCOME_KEYFRAMES = `
+@keyframes welcome-grid-fade {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+@keyframes welcome-cell-pulse {
+  0%, 100% { opacity: 0.15; transform: scale(0.9); filter: blur(0.5px); }
+  50% { opacity: 0.95; transform: scale(1); filter: blur(0px); }
+}
+@keyframes welcome-logo-in {
+  0% { opacity: 0; transform: scale(2.2); filter: blur(8px); }
+  60% { opacity: 1; filter: blur(0px); }
+  100% { opacity: 1; transform: scale(1); filter: blur(0px); }
+}
+@keyframes welcome-slogan-glow {
+  0%, 100% { text-shadow: 0 0 6px var(--neon), 0 0 14px var(--neon-soft); }
+  50% { text-shadow: 0 0 14px var(--neon), 0 0 28px var(--neon-soft); }
+}
+@keyframes welcome-fade-up {
+  from { opacity: 0; transform: translateY(8px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+@keyframes welcome-breathe {
+  0%, 100% { transform: scale(1); }
+  50% { transform: scale(1.03); }
+}
+@keyframes welcome-rays {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+@keyframes welcome-glow-pulse {
+  0%, 100% { opacity: 0.55; }
+  50% { opacity: 1; }
+}
+`;
+
+const ACTIVE_CELLS: Array<[number, number]> = [
+  [2, 2], [3, 2], [4, 2], [2, 3], [4, 3], [2, 4], [3, 4], [4, 4],
+  [10, 2], [11, 2], [12, 2], [10, 3], [12, 3], [10, 4], [11, 4], [12, 4],
+  [2, 10], [3, 10], [4, 10], [2, 11], [4, 11], [2, 12], [3, 12], [4, 12],
+  [7, 6], [8, 6], [7, 7], [8, 7],
+  [6, 8], [9, 8], [6, 9], [9, 9],
+  [11, 7], [12, 7], [11, 8], [13, 9], [10, 10], [11, 11], [12, 12], [13, 12],
+  [5, 13], [6, 13], [7, 13], [3, 7], [4, 9], [9, 4], [13, 5],
+];
+
+function NeonGrid({ dark }: { dark: boolean }) {
+  const accent = dark ? '#22d3ee' : '#3b82f6';
+  const accentSoft = dark ? 'rgba(34,211,238,0.5)' : 'rgba(59,130,246,0.45)';
+  const lineColor = dark ? 'rgba(148, 163, 184, 0.08)' : 'rgba(71, 85, 105, 0.10)';
+  const cols = 16;
+  const rows = 14;
+
+  return (
+    <div className="absolute inset-0 overflow-hidden pointer-events-none">
+      <div
+        className="absolute inset-0"
+        style={{
+          backgroundImage: `linear-gradient(${lineColor} 1px, transparent 1px), linear-gradient(90deg, ${lineColor} 1px, transparent 1px)`,
+          backgroundSize: '6vmin 6vmin',
+          animation: 'welcome-grid-fade 1.5s ease-out both',
+        }}
+      />
+      <div
+        className="absolute inset-0 grid"
+        style={{
+          gridTemplateColumns: `repeat(${cols}, 1fr)`,
+          gridTemplateRows: `repeat(${rows}, 1fr)`,
+        }}
+      >
+        {ACTIVE_CELLS.map(([c, r], i) => {
+          const delay = (i % 7) * 0.18 + (r % 3) * 0.12;
+          const baseDur = 2.2 + ((i * 13) % 9) / 10;
+          const dur = dark ? baseDur : baseDur * 1.6;
+          return (
+            <div
+              key={`${c}-${r}`}
+              style={{
+                gridColumn: c + 1,
+                gridRow: r + 1,
+                margin: '12%',
+                background: accent,
+                borderRadius: '2px',
+                boxShadow: `0 0 12px ${accent}, 0 0 24px ${accentSoft}`,
+                opacity: 0,
+                animation: `welcome-cell-pulse ${dur}s ease-in-out ${0.4 + delay}s infinite`,
+              }}
+            />
+          );
+        })}
+      </div>
+      <div
+        className="absolute inset-0"
+        style={{
+          background: dark
+            ? 'radial-gradient(circle at 50% 55%, transparent 0%, rgba(10,15,25,0.55) 70%, rgba(10,15,25,0.85) 100%)'
+            : 'radial-gradient(circle at 50% 55%, transparent 0%, rgba(248,250,252,0.6) 70%, rgba(248,250,252,0.9) 100%)',
+        }}
+      />
+    </div>
+  );
+}
+
+function Celestial({ dark }: { dark: boolean }) {
+  return (
+    <div
+      className="absolute pointer-events-none"
+      style={{
+        top: '-6vmin',
+        right: '-6vmin',
+        width: '38vmin',
+        height: '38vmin',
+        animation: 'welcome-breathe 7s ease-in-out infinite',
+      }}
+    >
+      {/* Sun rays (light mode) */}
+      {!dark && (
+        <div
+          className="absolute inset-0"
+          style={{
+            background:
+              'conic-gradient(from 0deg, rgba(251,191,36,0) 0deg, rgba(251,191,36,0.35) 10deg, rgba(251,191,36,0) 20deg, rgba(251,191,36,0) 40deg, rgba(251,191,36,0.3) 50deg, rgba(251,191,36,0) 60deg, rgba(251,191,36,0) 80deg, rgba(251,191,36,0.35) 90deg, rgba(251,191,36,0) 100deg, rgba(251,191,36,0) 130deg, rgba(251,191,36,0.3) 140deg, rgba(251,191,36,0) 150deg, rgba(251,191,36,0) 180deg, rgba(251,191,36,0.35) 190deg, rgba(251,191,36,0) 200deg, rgba(251,191,36,0) 230deg, rgba(251,191,36,0.3) 240deg, rgba(251,191,36,0) 250deg, rgba(251,191,36,0) 280deg, rgba(251,191,36,0.35) 290deg, rgba(251,191,36,0) 300deg, rgba(251,191,36,0) 330deg, rgba(251,191,36,0.3) 340deg, rgba(251,191,36,0) 360deg)',
+            borderRadius: '50%',
+            animation: 'welcome-rays 60s linear infinite, welcome-glow-pulse 4s ease-in-out infinite',
+            filter: 'blur(6px)',
+            transform: 'scale(1.6)',
+          }}
+        />
+      )}
+
+      {/* Outer glow */}
+      <div
+        className="absolute inset-0"
+        style={{
+          borderRadius: '50%',
+          background: dark
+            ? 'radial-gradient(circle, rgba(186,230,253,0.35) 0%, rgba(186,230,253,0.08) 55%, transparent 75%)'
+            : 'radial-gradient(circle, rgba(251,191,36,0.55) 0%, rgba(251,191,36,0.15) 55%, transparent 75%)',
+          transform: 'scale(1.8)',
+          filter: 'blur(12px)',
+          animation: 'welcome-glow-pulse 5s ease-in-out infinite',
+        }}
+      />
+
+      {/* Body */}
+      <div
+        className="absolute inset-0"
+        style={{
+          borderRadius: '50%',
+          background: dark
+            ? 'radial-gradient(circle at 35% 30%, #f1f5f9 0%, #cbd5e1 45%, #94a3b8 100%)'
+            : 'radial-gradient(circle at 35% 30%, #fef3c7 0%, #fbbf24 45%, #f59e0b 100%)',
+          boxShadow: dark
+            ? '0 0 60px rgba(186,230,253,0.4), inset -10px -10px 30px rgba(71,85,105,0.4)'
+            : '0 0 80px rgba(251,191,36,0.6), inset -10px -10px 30px rgba(217,119,6,0.3)',
+        }}
+      />
+
+      {/* Moon craters */}
+      {dark && (
+        <svg className="absolute inset-0 w-full h-full" viewBox="0 0 100 100" style={{ opacity: 0.35 }}>
+          <circle cx="60" cy="35" r="5" fill="#64748b" />
+          <circle cx="38" cy="55" r="7" fill="#64748b" />
+          <circle cx="65" cy="62" r="4" fill="#64748b" />
+          <circle cx="48" cy="38" r="3" fill="#64748b" />
+          <circle cx="72" cy="50" r="3.5" fill="#64748b" />
+        </svg>
+      )}
+    </div>
+  );
+}
+
 export function WelcomeScreen({ onDismiss }: WelcomeScreenProps) {
   const [step, setStep] = useState(0);
   const { dark, toggle: toggleTheme } = useTheme();
 
-  const bg = dark ? 'bg-gray-900' : 'bg-gray-50';
+  const bg = dark ? 'bg-[#0a0f19]' : 'bg-slate-50';
   const text = dark ? 'text-white' : 'text-gray-900';
-  const textMuted = dark ? 'text-gray-400' : 'text-gray-600';
-  const textFaint = dark ? 'text-gray-500' : 'text-gray-400';
-  const cardBg = dark ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200 shadow-sm';
+  const textMuted = dark ? 'text-gray-300' : 'text-gray-600';
+  const textFaint = dark ? 'text-gray-400' : 'text-gray-500';
+  const cardBg = dark ? 'bg-gray-900/70 border-gray-700/60 backdrop-blur-sm' : 'bg-white/80 border-gray-200 shadow-sm backdrop-blur-sm';
   const cardTitle = dark ? 'text-white' : 'text-gray-900';
   const cardDesc = dark ? 'text-gray-400' : 'text-gray-600';
-  const iconColor = dark ? 'text-blue-400' : 'text-blue-600';
+  const iconColor = dark ? 'text-cyan-400' : 'text-blue-600';
   const skipColor = dark ? 'text-gray-500 hover:text-gray-300' : 'text-gray-400 hover:text-gray-700';
-  const themeBtnColor = dark ? 'text-gray-500 hover:text-yellow-400 hover:bg-gray-800' : 'text-gray-400 hover:text-gray-700 hover:bg-gray-200';
+  const themeBtnColor = dark ? 'text-gray-400 hover:text-yellow-300 hover:bg-white/10' : 'text-gray-500 hover:text-orange-600 hover:bg-black/5';
+  const neon = dark ? '#22d3ee' : '#3b82f6';
+  const neonSoft = dark ? 'rgba(34,211,238,0.55)' : 'rgba(59,130,246,0.45)';
+
+  const cssVars = { '--neon': neon, '--neon-soft': neonSoft } as React.CSSProperties;
 
   return (
-    <div className={`fixed inset-0 z-50 ${bg} flex items-center justify-center p-4 transition-colors duration-300`}>
+    <div
+      className={`fixed inset-0 z-50 ${bg} flex items-center justify-center p-4 transition-colors duration-500 overflow-hidden`}
+      style={cssVars}
+    >
+      <style>{WELCOME_KEYFRAMES}</style>
+
+      <NeonGrid dark={dark} />
+      <Celestial dark={dark} />
+
       {/* Theme toggle */}
       <button
         onClick={toggleTheme}
-        className={`absolute top-4 right-4 p-2 rounded-full transition-colors ${themeBtnColor}`}
+        className={`absolute top-4 right-4 z-10 p-2 rounded-full transition-colors ${themeBtnColor}`}
         title={dark ? 'Switch to light mode' : 'Switch to dark mode'}
       >
         {dark ? <SunIcon /> : <MoonIcon />}
       </button>
 
-      <Footer dark={dark} />
+      <div className="relative z-10 w-full">
+        <Footer dark={dark} />
+      </div>
 
-      <div className="max-w-lg w-full">
+      <div className="relative z-10 max-w-lg w-full">
         {step === 0 && (
-          <div className="text-center space-y-6 animate-in fade-in">
+          <div className="text-center space-y-6">
             <div className="flex justify-center">
               <img
-                src={`${import.meta.env.BASE_URL}logo.png`}
+                key={dark ? 'logo-neon' : 'logo-light'}
+                src={`${import.meta.env.BASE_URL}${dark ? 'logo-neon.png' : 'logo.png'}`}
                 alt="STL Smith"
                 className="h-32 w-auto object-contain"
+                style={{ animation: 'welcome-logo-in 1.4s cubic-bezier(0.22, 1, 0.36, 1) both' }}
               />
             </div>
-            <p className={`${textMuted} text-lg`}>Create 3D-printable models from text, codes, and images</p>
-            <p className={`${textFaint} text-sm max-w-sm mx-auto`}>
+            <p
+              className={`${textMuted} text-lg font-medium tracking-wide`}
+              style={{
+                color: neon,
+                animation: 'welcome-fade-up 0.7s ease-out 1.6s both, welcome-slogan-glow 3.2s ease-in-out 2.3s infinite',
+              }}
+            >
+              Create 3D-printable models from text, codes, and images
+            </p>
+            <p
+              className={`${textFaint} text-sm max-w-sm mx-auto`}
+              style={{ animation: 'welcome-fade-up 0.7s ease-out 1.9s both' }}
+            >
               Design custom QR codes, nameplates, Spotify codes, and more — then export
               ready-to-print STL files directly in your browser.
             </p>
             <button
               onClick={() => setStep(1)}
-              className="mt-4 bg-blue-600 hover:bg-blue-700 text-white font-medium py-3 px-8 rounded-lg transition-colors text-base"
+              className="mt-4 font-medium py-3 px-8 rounded-lg transition-all text-base text-white"
+              style={{
+                background: dark
+                  ? 'linear-gradient(135deg, #06b6d4 0%, #3b82f6 100%)'
+                  : 'linear-gradient(135deg, #3b82f6 0%, #6366f1 100%)',
+                boxShadow: `0 0 24px ${neonSoft}`,
+                animation: 'welcome-fade-up 0.7s ease-out 2.2s both',
+              }}
             >
               See How It Works
             </button>
-            <div>
+            <div style={{ animation: 'welcome-fade-up 0.7s ease-out 2.4s both' }}>
               <button
                 onClick={onDismiss}
                 className={`${skipColor} text-sm transition-colors`}
@@ -291,7 +505,13 @@ export function WelcomeScreen({ onDismiss }: WelcomeScreenProps) {
             <div className="flex justify-center pt-2">
               <button
                 onClick={onDismiss}
-                className="bg-blue-600 hover:bg-blue-700 text-white font-medium py-3 px-8 rounded-lg transition-colors text-base"
+                className="font-medium py-3 px-8 rounded-lg transition-all text-base text-white"
+                style={{
+                  background: dark
+                    ? 'linear-gradient(135deg, #06b6d4 0%, #3b82f6 100%)'
+                    : 'linear-gradient(135deg, #3b82f6 0%, #6366f1 100%)',
+                  boxShadow: `0 0 24px ${neonSoft}`,
+                }}
               >
                 Get Started
               </button>
