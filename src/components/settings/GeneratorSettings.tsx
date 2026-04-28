@@ -1,4 +1,5 @@
 import type {
+  BaseConfig,
   ContentConfig,
   TextConfig,
   SpotifyConfig,
@@ -98,9 +99,13 @@ function TextInput({
 export function QRSettings({
   content,
   onChange,
+  base,
+  onBaseChange,
 }: {
   content: ContentConfig;
   onChange: (u: Partial<ContentConfig>) => void;
+  base?: BaseConfig;
+  onBaseChange?: (u: Partial<BaseConfig>) => void;
 }) {
   const charCount = content.text.length;
   const isLong = charCount > 175;
@@ -133,7 +138,14 @@ export function QRSettings({
       <Toggle
         label="Add Text Label Below"
         checked={content.showQrLabel}
-        onChange={(v) => onChange({ showQrLabel: v })}
+        onChange={(v) => {
+          onChange({ showQrLabel: v });
+          if (v && base && onBaseChange && base.height <= base.width) {
+            onBaseChange({ height: Math.round(base.width * 1.25) });
+          } else if (!v && base && onBaseChange && base.height > base.width) {
+            onBaseChange({ height: base.width });
+          }
+        }}
       />
       {content.showQrLabel && (
         <div className="flex flex-col gap-1">

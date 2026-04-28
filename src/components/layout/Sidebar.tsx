@@ -189,7 +189,7 @@ export function Sidebar(props: SidebarProps) {
         {/* Scrollable settings */}
         <div className="flex-1 overflow-y-auto">
           <SectionHeader title={GENERATOR_LABELS[config.generator]} defaultOpen>
-            {config.generator === 'qr' && <QRSettings content={config.content} onChange={onContentChange} />}
+            {config.generator === 'qr' && <QRSettings content={config.content} onChange={onContentChange} base={config.base} onBaseChange={onBaseChange} />}
             {config.generator === 'text' && <TextSettings config={config.text} onChange={onTextChange} />}
             {config.generator === 'spotify' && <SpotifySettings config={config.spotify} onChange={onSpotifyChange} />}
             {config.generator === 'wifi' && <WifiSettings config={config.wifi} onChange={onWifiChange} />}

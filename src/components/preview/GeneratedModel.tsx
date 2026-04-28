@@ -301,48 +301,55 @@ function MountingIndicators({ config }: { config: ModelConfig }) {
 
 function QRGeneratorGroup({ config }: { config: ModelConfig }) {
   const { w: areaW, h: areaH } = contentArea(config.base);
+  const embossed = config.content.mode === 'embossed';
+  const depth = config.content.contentHeight;
+  const textBandHeight = config.content.showQrLabel ? Math.min(areaH * 0.2, 10) : 0;
+  const gap = textBandHeight > 0 ? 1.5 : 0;
 
   const geometry = useMemo(() => {
     const text = config.content.text || 'Hello';
+    const qrH = areaH - textBandHeight - gap;
+    const qrSize = Math.min(areaW, qrH);
     try {
       const { matrix, moduleCount } = generateQRMatrix(text, config.content.errorCorrection);
       return createQRGeometry(
         matrix,
         moduleCount,
-        areaW,
-        areaH,
+        qrSize,
+        qrSize,
         0,
-        config.content.contentHeight,
-        config.content.mode === 'embossed',
+        depth,
+        embossed,
       );
     } catch {
       const { matrix, moduleCount } = generateQRMatrix('Hello', config.content.errorCorrection);
       return createQRGeometry(
         matrix,
         moduleCount,
-        areaW,
-        areaH,
+        qrSize,
+        qrSize,
         0,
-        config.content.contentHeight,
-        config.content.mode === 'embossed',
+        depth,
+        embossed,
       );
     }
   }, [
     config.content.text,
     config.content.errorCorrection,
-    config.content.contentHeight,
-    config.content.mode,
+    depth,
+    embossed,
     areaW,
     areaH,
+    textBandHeight,
+    gap,
   ]);
 
-  const embossed = config.content.mode === 'embossed';
-  const labelBand = config.content.showQrLabel ? Math.min(areaH * 0.15, 9) : 0;
+  const qrYOffset = (textBandHeight + gap) / 2;
   const z = contentZ(config.base, config.content, embossed);
 
   return (
     <>
-      <mesh position={[0, labelBand / 2, z]} userData={{ part: 'content' }}>
+      <mesh position={[0, qrYOffset, z]} userData={{ part: 'content' }}>
         <primitive object={geometry} attach="geometry" />
         <meshStandardMaterial color={config.colors.content} roughness={0.3} metalness={0.2} />
       </mesh>
@@ -350,11 +357,11 @@ function QRGeneratorGroup({ config }: { config: ModelConfig }) {
         <TextContent
           text={config.content.qrLabel}
           fontStyle="regular"
-          size={3.5}
-          depth={config.content.contentHeight}
+          size={4}
+          depth={depth}
           maxWidth={areaW}
-          maxHeight={labelBand * 0.75}
-          position={[0, -areaH / 2 + labelBand / 2, z]}
+          maxHeight={textBandHeight * 0.8}
+          position={[0, -areaH / 2 + textBandHeight / 2, z]}
           color={config.colors.text}
           part="text"
         />
