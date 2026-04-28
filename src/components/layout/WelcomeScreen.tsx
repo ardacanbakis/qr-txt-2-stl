@@ -161,7 +161,7 @@ const SOCIAL_LINKS = [
 
 function Footer({ dark }: { dark: boolean }) {
   return (
-    <div className="absolute bottom-6 left-0 right-0">
+    <div>
       <div className="flex items-center justify-center gap-4 mb-3">
         {SOCIAL_LINKS.map(link => (
           <a
@@ -222,28 +222,28 @@ const WELCOME_KEYFRAMES = `
   from { opacity: 0; transform: translateY(8px); }
   to { opacity: 1; transform: translateY(0); }
 }
-@keyframes welcome-breathe {
-  0%, 100% { transform: scale(1); }
-  50% { transform: scale(1.03); }
-}
-@keyframes welcome-rays {
-  from { transform: rotate(0deg); }
-  to { transform: rotate(360deg); }
-}
-@keyframes welcome-glow-pulse {
-  0%, 100% { opacity: 0.55; }
-  50% { opacity: 1; }
-}
 `;
 
 const ACTIVE_CELLS: Array<[number, number]> = [
-  [2, 2], [3, 2], [4, 2], [2, 3], [4, 3], [2, 4], [3, 4], [4, 4],
-  [10, 2], [11, 2], [12, 2], [10, 3], [12, 3], [10, 4], [11, 4], [12, 4],
-  [2, 10], [3, 10], [4, 10], [2, 11], [4, 11], [2, 12], [3, 12], [4, 12],
-  [7, 6], [8, 6], [7, 7], [8, 7],
-  [6, 8], [9, 8], [6, 9], [9, 9],
-  [11, 7], [12, 7], [11, 8], [13, 9], [10, 10], [11, 11], [12, 12], [13, 12],
-  [5, 13], [6, 13], [7, 13], [3, 7], [4, 9], [9, 4], [13, 5],
+  // T — top-left
+  [1,1],[2,1],[3,1],[4,1],[5,1],
+  [3,2],[3,3],[3,4],[3,5],
+  // H — top-right
+  [10,1],[14,1],[10,2],[14,2],
+  [10,3],[11,3],[12,3],[13,3],[14,3],
+  [10,4],[14,4],[10,5],[14,5],
+  // E — bottom-left
+  [1,8],[2,8],[3,8],[4,8],[5,8],
+  [1,9],
+  [1,10],[2,10],[3,10],[4,10],
+  [1,11],
+  [1,12],[2,12],[3,12],[4,12],[5,12],
+  // O — bottom-right
+  [11,8],[12,8],[13,8],
+  [10,9],[14,9],
+  [10,10],[14,10],
+  [10,11],[14,11],
+  [11,12],[12,12],[13,12],
 ];
 
 function NeonGrid({ dark }: { dark: boolean }) {
@@ -303,74 +303,6 @@ function NeonGrid({ dark }: { dark: boolean }) {
   );
 }
 
-function Celestial({ dark }: { dark: boolean }) {
-  return (
-    <div
-      className="absolute pointer-events-none"
-      style={{
-        top: '-6vmin',
-        right: '-6vmin',
-        width: '38vmin',
-        height: '38vmin',
-        animation: 'welcome-breathe 7s ease-in-out infinite',
-      }}
-    >
-      {/* Sun rays (light mode) */}
-      {!dark && (
-        <div
-          className="absolute inset-0"
-          style={{
-            background:
-              'conic-gradient(from 0deg, rgba(251,191,36,0) 0deg, rgba(251,191,36,0.35) 10deg, rgba(251,191,36,0) 20deg, rgba(251,191,36,0) 40deg, rgba(251,191,36,0.3) 50deg, rgba(251,191,36,0) 60deg, rgba(251,191,36,0) 80deg, rgba(251,191,36,0.35) 90deg, rgba(251,191,36,0) 100deg, rgba(251,191,36,0) 130deg, rgba(251,191,36,0.3) 140deg, rgba(251,191,36,0) 150deg, rgba(251,191,36,0) 180deg, rgba(251,191,36,0.35) 190deg, rgba(251,191,36,0) 200deg, rgba(251,191,36,0) 230deg, rgba(251,191,36,0.3) 240deg, rgba(251,191,36,0) 250deg, rgba(251,191,36,0) 280deg, rgba(251,191,36,0.35) 290deg, rgba(251,191,36,0) 300deg, rgba(251,191,36,0) 330deg, rgba(251,191,36,0.3) 340deg, rgba(251,191,36,0) 360deg)',
-            borderRadius: '50%',
-            animation: 'welcome-rays 60s linear infinite, welcome-glow-pulse 4s ease-in-out infinite',
-            filter: 'blur(6px)',
-            transform: 'scale(1.6)',
-          }}
-        />
-      )}
-
-      {/* Outer glow */}
-      <div
-        className="absolute inset-0"
-        style={{
-          borderRadius: '50%',
-          background: dark
-            ? 'radial-gradient(circle, rgba(186,230,253,0.35) 0%, rgba(186,230,253,0.08) 55%, transparent 75%)'
-            : 'radial-gradient(circle, rgba(251,191,36,0.55) 0%, rgba(251,191,36,0.15) 55%, transparent 75%)',
-          transform: 'scale(1.8)',
-          filter: 'blur(12px)',
-          animation: 'welcome-glow-pulse 5s ease-in-out infinite',
-        }}
-      />
-
-      {/* Body */}
-      <div
-        className="absolute inset-0"
-        style={{
-          borderRadius: '50%',
-          background: dark
-            ? 'radial-gradient(circle at 35% 30%, #f1f5f9 0%, #cbd5e1 45%, #94a3b8 100%)'
-            : 'radial-gradient(circle at 35% 30%, #fef3c7 0%, #fbbf24 45%, #f59e0b 100%)',
-          boxShadow: dark
-            ? '0 0 60px rgba(186,230,253,0.4), inset -10px -10px 30px rgba(71,85,105,0.4)'
-            : '0 0 80px rgba(251,191,36,0.6), inset -10px -10px 30px rgba(217,119,6,0.3)',
-        }}
-      />
-
-      {/* Moon craters */}
-      {dark && (
-        <svg className="absolute inset-0 w-full h-full" viewBox="0 0 100 100" style={{ opacity: 0.35 }}>
-          <circle cx="60" cy="35" r="5" fill="#64748b" />
-          <circle cx="38" cy="55" r="7" fill="#64748b" />
-          <circle cx="65" cy="62" r="4" fill="#64748b" />
-          <circle cx="48" cy="38" r="3" fill="#64748b" />
-          <circle cx="72" cy="50" r="3.5" fill="#64748b" />
-        </svg>
-      )}
-    </div>
-  );
-}
 
 export function WelcomeScreen({ onDismiss }: WelcomeScreenProps) {
   const [step, setStep] = useState(0);
@@ -380,9 +312,6 @@ export function WelcomeScreen({ onDismiss }: WelcomeScreenProps) {
   const text = dark ? 'text-white' : 'text-gray-900';
   const textMuted = dark ? 'text-gray-300' : 'text-gray-600';
   const textFaint = dark ? 'text-gray-400' : 'text-gray-500';
-  const cardBg = dark ? 'bg-gray-900/70 border-gray-700/60 backdrop-blur-sm' : 'bg-white/80 border-gray-200 shadow-sm backdrop-blur-sm';
-  const cardTitle = dark ? 'text-white' : 'text-gray-900';
-  const cardDesc = dark ? 'text-gray-400' : 'text-gray-600';
   const iconColor = dark ? 'text-cyan-400' : 'text-blue-600';
   const skipColor = dark ? 'text-gray-500 hover:text-gray-300' : 'text-gray-400 hover:text-gray-700';
   const themeBtnColor = dark ? 'text-gray-400 hover:text-yellow-300 hover:bg-white/10' : 'text-gray-500 hover:text-orange-600 hover:bg-black/5';
@@ -393,13 +322,12 @@ export function WelcomeScreen({ onDismiss }: WelcomeScreenProps) {
 
   return (
     <div
-      className={`fixed inset-0 z-50 ${bg} flex items-center justify-center p-4 transition-colors duration-500 overflow-hidden`}
+      className={`fixed inset-0 z-50 ${bg} flex flex-col items-center justify-center p-4 transition-colors duration-500 overflow-hidden`}
       style={cssVars}
     >
       <style>{WELCOME_KEYFRAMES}</style>
 
       <NeonGrid dark={dark} />
-      <Celestial dark={dark} />
 
       {/* Theme toggle */}
       <button
@@ -410,11 +338,7 @@ export function WelcomeScreen({ onDismiss }: WelcomeScreenProps) {
         {dark ? <SunIcon /> : <MoonIcon />}
       </button>
 
-      <div className="relative z-10 w-full">
-        <Footer dark={dark} />
-      </div>
-
-      <div className="relative z-10 max-w-lg w-full">
+      <div className="relative z-10 max-w-lg w-full flex-1 flex items-center justify-center">
         {step === 0 && (
           <div className="text-center space-y-6">
             <div className="flex justify-center">
@@ -466,58 +390,115 @@ export function WelcomeScreen({ onDismiss }: WelcomeScreenProps) {
           </div>
         )}
 
-        {step === 1 && (
-          <div className="space-y-6 animate-in fade-in">
-            <h2 className={`text-xl font-semibold ${text} text-center`}>How It Works</h2>
+        {step >= 1 && step <= 3 && (
+          <div className="text-center space-y-6">
+            {/* Step indicator */}
             <div className={`flex items-center justify-center gap-3 text-sm ${textMuted}`}>
-              <span className="flex items-center gap-1.5">
-                <span className="w-6 h-6 rounded-full bg-blue-600 text-white flex items-center justify-center text-xs font-bold">1</span>
-                Choose type
-              </span>
-              <svg className={`w-4 h-4 ${textFaint}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-              </svg>
-              <span className="flex items-center gap-1.5">
-                <span className="w-6 h-6 rounded-full bg-blue-600 text-white flex items-center justify-center text-xs font-bold">2</span>
-                Customize
-              </span>
-              <svg className={`w-4 h-4 ${textFaint}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-              </svg>
-              <span className="flex items-center gap-1.5">
-                <span className="w-6 h-6 rounded-full bg-blue-600 text-white flex items-center justify-center text-xs font-bold">3</span>
-                Export STL
-              </span>
-            </div>
-
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mt-4">
-              {FEATURES.map((f, i) => (
-                <div key={i} className={`${cardBg} border rounded-lg p-4 flex gap-3`}>
-                  <div className={`${iconColor} shrink-0 mt-0.5`}>{f.icon}</div>
-                  <div>
-                    <h3 className={`text-sm font-medium ${cardTitle}`}>{f.title}</h3>
-                    <p className={`text-xs ${cardDesc} mt-1 leading-relaxed`}>{f.desc}</p>
-                  </div>
-                </div>
+              {[1, 2, 3].map(n => (
+                <span key={n} className="flex items-center gap-1.5">
+                  <span className={`w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold transition-all ${
+                    n === step
+                      ? 'bg-blue-600 text-white scale-110'
+                      : n < step
+                        ? (dark ? 'bg-cyan-800 text-cyan-300' : 'bg-blue-200 text-blue-700')
+                        : (dark ? 'bg-gray-700 text-gray-400' : 'bg-gray-200 text-gray-500')
+                  }`}>{n}</span>
+                  {n < 3 && (
+                    <div className={`w-8 h-0.5 ${n < step ? (dark ? 'bg-cyan-700' : 'bg-blue-300') : (dark ? 'bg-gray-700' : 'bg-gray-200')}`} />
+                  )}
+                </span>
               ))}
             </div>
 
-            <div className="flex justify-center pt-2">
+            {step === 1 && (
+              <div className="space-y-4" style={{ animation: 'welcome-fade-up 0.5s ease-out both' }}>
+                <div className={`${iconColor} flex justify-center`}>{FEATURES[0].icon}</div>
+                <h3 className={`text-lg font-semibold ${text}`}>{FEATURES[0].title}</h3>
+                <p className={`text-sm ${textMuted} max-w-sm mx-auto leading-relaxed`}>{FEATURES[0].desc}</p>
+                <p className={`text-xs ${textFaint} max-w-xs mx-auto`}>
+                  Pick a generator from the sidebar tabs — each one is tailored for a different use case.
+                </p>
+              </div>
+            )}
+
+            {step === 2 && (
+              <div className="space-y-4" style={{ animation: 'welcome-fade-up 0.5s ease-out both' }}>
+                <div className={`${iconColor} flex justify-center`}>{FEATURES[3].icon}</div>
+                <h3 className={`text-lg font-semibold ${text}`}>Customize Everything</h3>
+                <p className={`text-sm ${textMuted} max-w-sm mx-auto leading-relaxed`}>
+                  Adjust base shape, dimensions, edge treatment, borders, colors, and mounting options like magnets, screws, and keychains.
+                </p>
+                <p className={`text-xs ${textFaint} max-w-xs mx-auto`}>
+                  See changes in real-time with the interactive 3D preview. Orbit, pan, and zoom freely.
+                </p>
+              </div>
+            )}
+
+            {step === 3 && (
+              <div className="space-y-4" style={{ animation: 'welcome-fade-up 0.5s ease-out both' }}>
+                <div className={`${iconColor} flex justify-center`}>{FEATURES[2].icon}</div>
+                <h3 className={`text-lg font-semibold ${text}`}>Export &amp; Print</h3>
+                <p className={`text-sm ${textMuted} max-w-sm mx-auto leading-relaxed`}>
+                  Download a single STL or separate parts as a ZIP for multi-color printing. Everything runs client-side — no upload needed.
+                </p>
+                <p className={`text-xs ${textFaint} max-w-xs mx-auto`}>
+                  Works with any slicer: Bambu Studio, OrcaSlicer, PrusaSlicer, Cura, and more.
+                </p>
+              </div>
+            )}
+
+            <div className="flex items-center justify-center gap-3 pt-2">
+              {step > 1 && (
+                <button
+                  onClick={() => setStep(s => s - 1)}
+                  className={`text-sm py-2 px-5 rounded-lg transition-colors ${dark ? 'text-gray-300 hover:bg-white/10' : 'text-gray-600 hover:bg-black/5'}`}
+                >
+                  Back
+                </button>
+              )}
+              {step < 3 ? (
+                <button
+                  onClick={() => setStep(s => s + 1)}
+                  className="font-medium py-3 px-8 rounded-lg transition-all text-base text-white"
+                  style={{
+                    background: dark
+                      ? 'linear-gradient(135deg, #06b6d4 0%, #3b82f6 100%)'
+                      : 'linear-gradient(135deg, #3b82f6 0%, #6366f1 100%)',
+                    boxShadow: `0 0 24px ${neonSoft}`,
+                  }}
+                >
+                  Next
+                </button>
+              ) : (
+                <button
+                  onClick={onDismiss}
+                  className="font-medium py-3 px-8 rounded-lg transition-all text-base text-white"
+                  style={{
+                    background: dark
+                      ? 'linear-gradient(135deg, #06b6d4 0%, #3b82f6 100%)'
+                      : 'linear-gradient(135deg, #3b82f6 0%, #6366f1 100%)',
+                    boxShadow: `0 0 24px ${neonSoft}`,
+                  }}
+                >
+                  Get Started
+                </button>
+              )}
+            </div>
+            {step < 3 && (
               <button
                 onClick={onDismiss}
-                className="font-medium py-3 px-8 rounded-lg transition-all text-base text-white"
-                style={{
-                  background: dark
-                    ? 'linear-gradient(135deg, #06b6d4 0%, #3b82f6 100%)'
-                    : 'linear-gradient(135deg, #3b82f6 0%, #6366f1 100%)',
-                  boxShadow: `0 0 24px ${neonSoft}`,
-                }}
+                className={`${skipColor} text-xs transition-colors`}
               >
-                Get Started
+                Skip
               </button>
-            </div>
+            )}
           </div>
         )}
+      </div>
+
+      {/* Footer — pinned to bottom */}
+      <div className="relative z-10 shrink-0 pb-4">
+        <Footer dark={dark} />
       </div>
     </div>
   );
