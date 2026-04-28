@@ -11,6 +11,8 @@ import {
   createWallMountGeometry,
   createFridgeMagnetGeometry,
   magnetMinThickness,
+  MAGNET_TOLERANCE_DIAMETER,
+  MAGNET_TOLERANCE_DEPTH,
   type MagnetRecess,
 } from '../../generators/base-generator';
 import { buildTextGeometry, isItalic } from '../../generators/text-generator';
@@ -113,10 +115,12 @@ function BaseMesh({ config }: { config: ModelConfig }) {
   const geometry = useMemo(() => {
     if (config.magnets.enabled) {
       const positions = computeMagnetPositions(config);
+      const tolerancedRadius = (config.magnets.customDiameter + MAGNET_TOLERANCE_DIAMETER) / 2;
+      const tolerancedDepth = config.magnets.customDepth + MAGNET_TOLERANCE_DEPTH;
       const recesses: MagnetRecess[] = positions.map(([x, y]) => ({
         x, y,
-        radius: config.magnets.customDiameter / 2,
-        depth: config.magnets.customDepth,
+        radius: tolerancedRadius,
+        depth: tolerancedDepth,
       }));
       const effectiveThickness = Math.max(config.base.thickness, magnetMinThickness(config.magnets.customDepth));
       return createBasePlateWithRecesses(
@@ -223,9 +227,9 @@ function MagnetHoles({ config }: { config: ModelConfig }) {
   const geometries = useMemo(() => {
     if (!config.magnets.enabled) return [];
     const positions = computeMagnetPositions(config);
-    const radius = config.magnets.customDiameter / 2;
-    const depth = config.magnets.customDepth;
-    const effectiveThickness = Math.max(config.base.thickness, magnetMinThickness(depth));
+    const radius = (config.magnets.customDiameter + MAGNET_TOLERANCE_DIAMETER) / 2;
+    const depth = config.magnets.customDepth + MAGNET_TOLERANCE_DEPTH;
+    const effectiveThickness = Math.max(config.base.thickness, magnetMinThickness(config.magnets.customDepth));
 
     return positions.map(([x, y]) => {
       const geo = new THREE.CylinderGeometry(radius, radius, depth, 32);
@@ -267,7 +271,10 @@ function MountingIndicators({ config }: { config: ModelConfig }) {
   const fridgeGeo = useMemo(() => {
     if (!mounting.fridgeMagnet) return null;
     return createFridgeMagnetGeometry(
-      mounting.fridgeMagnetWidth, mounting.fridgeMagnetHeight, mounting.fridgeMagnetDepth, base.thickness,
+      mounting.fridgeMagnetWidth + MAGNET_TOLERANCE_DIAMETER,
+      mounting.fridgeMagnetHeight + MAGNET_TOLERANCE_DIAMETER,
+      mounting.fridgeMagnetDepth + MAGNET_TOLERANCE_DEPTH,
+      base.thickness,
     );
   }, [mounting.fridgeMagnet, mounting.fridgeMagnetWidth, mounting.fridgeMagnetHeight, mounting.fridgeMagnetDepth, base.thickness]);
 

@@ -86,6 +86,22 @@ function MoonIcon() {
   );
 }
 
+function SpotifyIcon() {
+  return (
+    <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
+      <path d="M12 0C5.4 0 0 5.4 0 12s5.4 12 12 12 12-5.4 12-12S18.66 0 12 0zm5.521 17.34c-.24.359-.66.48-1.021.24-2.82-1.74-6.36-2.101-10.561-1.141-.418.122-.779-.179-.899-.539-.12-.421.18-.78.54-.9 4.56-1.021 8.52-.6 11.64 1.32.42.18.479.659.301 1.02zm1.44-3.3c-.301.42-.841.6-1.262.3-3.239-1.98-8.159-2.58-11.939-1.38-.479.12-1.02-.12-1.14-.6-.12-.48.12-1.021.6-1.141C9.6 9.9 15 10.561 18.72 12.84c.361.181.54.78.241 1.2zm.12-3.36C15.24 8.4 8.82 8.16 5.16 9.301c-.6.179-1.2-.181-1.38-.721-.18-.601.18-1.2.72-1.381 4.26-1.26 11.28-1.02 15.721 1.621.539.3.719 1.02.419 1.56-.299.421-1.02.599-1.559.3z" />
+    </svg>
+  );
+}
+
+function LinkedinIcon() {
+  return (
+    <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
+      <path d="M20.447 20.452h-3.554v-5.569c0-1.328-.027-3.037-1.852-3.037-1.853 0-2.136 1.445-2.136 2.939v5.667H9.351V9h3.414v1.561h.046c.477-.9 1.637-1.85 3.37-1.85 3.601 0 4.267 2.37 4.267 5.455v6.286zM5.337 7.433a2.062 2.062 0 01-2.063-2.065 2.064 2.064 0 112.063 2.065zm1.782 13.019H3.555V9h3.564v11.452zM22.225 0H1.771C.792 0 0 .774 0 1.729v20.542C0 23.227.792 24 1.771 24h20.451C23.2 24 24 23.227 24 22.271V1.729C24 .774 23.2 0 22.222 0h.003z" />
+    </svg>
+  );
+}
+
 const FEATURES = [
   {
     icon: (
@@ -129,8 +145,10 @@ const FEATURES = [
 const SOCIAL_LINKS = [
   { href: 'https://ardacanbakis.com', icon: <GlobeIcon />, label: 'Website' },
   { href: 'https://github.com/ardacanbakis', icon: <GithubIcon />, label: 'GitHub' },
-  { href: 'https://instagram.com/ardacanbakis', icon: <InstagramIcon />, label: 'Instagram' },
-  { href: 'https://youtube.com/@ardacanbakis', icon: <YoutubeIcon />, label: 'YouTube' },
+  { href: 'https://www.instagram.com/arda.canbakiss/', icon: <InstagramIcon />, label: 'Instagram' },
+  { href: 'https://www.youtube.com/@arda.canbakis', icon: <YoutubeIcon />, label: 'YouTube' },
+  { href: 'https://open.spotify.com/user/11146430303', icon: <SpotifyIcon />, label: 'Spotify' },
+  { href: 'http://linkedin.com/in/ardacanbakis', icon: <LinkedinIcon />, label: 'LinkedIn' },
 ];
 
 function Footer({ dark }: { dark: boolean }) {
@@ -155,7 +173,11 @@ function Footer({ dark }: { dark: boolean }) {
         ))}
       </div>
       <p className={`text-center text-xs ${dark ? 'text-gray-600' : 'text-gray-400'}`}>
-        Created by{' '}
+        Created with{' '}
+        <svg className="inline w-3 h-3 -mt-0.5" viewBox="0 0 24 24" fill="#ef4444">
+          <path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z" />
+        </svg>{' '}
+        by{' '}
         <a
           href="https://ardacanbakis.com"
           target="_blank"
@@ -164,6 +186,7 @@ function Footer({ dark }: { dark: boolean }) {
         >
           Arda Canbakis
         </a>
+        {' '}&copy; 2026
       </p>
     </div>
   );

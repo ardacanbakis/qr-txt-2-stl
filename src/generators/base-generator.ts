@@ -33,9 +33,11 @@ export interface MagnetRecess {
 }
 
 const MAGNET_WALL = 1.2;
+export const MAGNET_TOLERANCE_DIAMETER = 0.2;
+export const MAGNET_TOLERANCE_DEPTH = 0.15;
 
 export function magnetMinThickness(magnetDepth: number): number {
-  return magnetDepth + MAGNET_WALL;
+  return magnetDepth + MAGNET_TOLERANCE_DEPTH + MAGNET_WALL;
 }
 
 export function createBasePlateWithRecesses(
