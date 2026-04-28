@@ -7,6 +7,7 @@ import { MountingSettings } from '../settings/MountingSettings';
 import { ColorSettings } from '../settings/ColorSettings';
 import { Toggle } from '../shared/Toggle';
 import { TemplatesPanel } from './TemplatesPanel';
+import { useTheme } from './WelcomeScreen';
 import {
   QRSettings,
   TextSettings,
@@ -110,6 +111,7 @@ export function Sidebar(props: SidebarProps) {
   const [showTemplates, setShowTemplates] = useState(false);
   const [collapsed, setCollapsed] = useState(false);
   const [mapPickerExpanded, setMapPickerExpanded] = useState(false);
+  const { dark } = useTheme();
 
   const isDual = layout === 'dual';
   const isMap = config.generator === 'map';
@@ -149,7 +151,7 @@ export function Sidebar(props: SidebarProps) {
             title="Back to home"
           >
             <img
-              src={`${import.meta.env.BASE_URL}logo.png`}
+              src={`${import.meta.env.BASE_URL}${dark ? 'logo-neon.png' : 'logo.png'}`}
               alt="STL Smith"
               className="h-9 w-auto object-contain"
             />
