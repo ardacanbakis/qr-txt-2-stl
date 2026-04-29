@@ -27,7 +27,7 @@ export type FontStyle = 'regular' | 'bold' | 'italic' | 'bold-italic';
 
 export type TextAlignment = 'left' | 'center' | 'right';
 
-export type BarcodeFormat = 'CODE39' | 'CODE128' | 'EAN13';
+export type BarcodeFormat = 'CODE39' | 'CODE128' | 'EAN13' | 'EAN8' | 'UPCA';
 
 export type WifiEncryption = 'WPA' | 'WEP' | 'nopass';
 

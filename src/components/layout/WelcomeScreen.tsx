@@ -222,6 +222,30 @@ const WELCOME_KEYFRAMES = `
   from { opacity: 0; transform: translateY(8px); }
   to { opacity: 1; transform: translateY(0); }
 }
+@keyframes bounce-tl {
+  0%   { opacity:0; transform: translate(-120%, -120%) scale(0.4); }
+  65%  { opacity:1; transform: translate(4%, 4%) scale(1.05); }
+  82%  { transform: translate(-2%, -2%) scale(0.97); }
+  100% { opacity:1; transform: translate(0,0) scale(1); }
+}
+@keyframes bounce-tr {
+  0%   { opacity:0; transform: translate(120%, -120%) scale(0.4); }
+  65%  { opacity:1; transform: translate(-4%, 4%) scale(1.05); }
+  82%  { transform: translate(2%, -2%) scale(0.97); }
+  100% { opacity:1; transform: translate(0,0) scale(1); }
+}
+@keyframes bounce-bl {
+  0%   { opacity:0; transform: translate(-120%, 120%) scale(0.4); }
+  65%  { opacity:1; transform: translate(4%, -4%) scale(1.05); }
+  82%  { transform: translate(-2%, 2%) scale(0.97); }
+  100% { opacity:1; transform: translate(0,0) scale(1); }
+}
+@keyframes bounce-br {
+  0%   { opacity:0; transform: translate(120%, 120%) scale(0.4); }
+  65%  { opacity:1; transform: translate(-4%, -4%) scale(1.05); }
+  82%  { transform: translate(2%, 2%) scale(0.97); }
+  100% { opacity:1; transform: translate(0,0) scale(1); }
+}
 `;
 
 const ACTIVE_CELLS: Array<[number, number]> = [
@@ -390,108 +414,62 @@ export function WelcomeScreen({ onDismiss }: WelcomeScreenProps) {
           </div>
         )}
 
-        {step >= 1 && step <= 3 && (
+        {step === 1 && (
           <div className="text-center space-y-6">
-            {/* Step indicator */}
-            <div className={`flex items-center justify-center gap-3 text-sm ${textMuted}`}>
-              {[1, 2, 3].map(n => (
-                <span key={n} className="flex items-center gap-1.5">
-                  <span className={`w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold transition-all ${
-                    n === step
-                      ? 'bg-blue-600 text-white scale-110'
-                      : n < step
-                        ? (dark ? 'bg-cyan-800 text-cyan-300' : 'bg-blue-200 text-blue-700')
-                        : (dark ? 'bg-gray-700 text-gray-400' : 'bg-gray-200 text-gray-500')
-                  }`}>{n}</span>
-                  {n < 3 && (
-                    <div className={`w-8 h-0.5 ${n < step ? (dark ? 'bg-cyan-700' : 'bg-blue-300') : (dark ? 'bg-gray-700' : 'bg-gray-200')}`} />
-                  )}
-                </span>
-              ))}
+            <h2
+              className={`text-xl font-semibold ${text}`}
+              style={{ animation: 'welcome-fade-up 0.5s ease-out both' }}
+            >
+              How It Works
+            </h2>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mt-4">
+              {FEATURES.map((f, i) => {
+                const bounceAnim = ['bounce-tl', 'bounce-tr', 'bounce-bl', 'bounce-br'][i];
+                const dur = dark ? '0.55s' : '0.9s';
+                const delay = dark ? `${0.2 + i * 0.35}s` : `${0.3 + i * 0.55}s`;
+                const cardBg = dark
+                  ? 'bg-gray-900/70 border-gray-700/60 backdrop-blur-sm'
+                  : 'bg-white/80 border-gray-200 shadow-sm backdrop-blur-sm';
+                return (
+                  <div
+                    key={i}
+                    className={`${cardBg} border rounded-lg p-4 flex gap-3`}
+                    style={{
+                      opacity: 0,
+                      animation: `${bounceAnim} ${dur} cubic-bezier(0.22, 1, 0.36, 1) ${delay} both`,
+                    }}
+                  >
+                    <div className={`${iconColor} shrink-0 mt-0.5`}>{f.icon}</div>
+                    <div className="text-left">
+                      <h3 className={`text-sm font-medium ${dark ? 'text-white' : 'text-gray-900'}`}>{f.title}</h3>
+                      <p className={`text-xs ${dark ? 'text-gray-400' : 'text-gray-600'} mt-1 leading-relaxed`}>{f.desc}</p>
+                    </div>
+                  </div>
+                );
+              })}
             </div>
 
-            {step === 1 && (
-              <div className="space-y-4" style={{ animation: 'welcome-fade-up 0.5s ease-out both' }}>
-                <div className={`${iconColor} flex justify-center`}>{FEATURES[0].icon}</div>
-                <h3 className={`text-lg font-semibold ${text}`}>{FEATURES[0].title}</h3>
-                <p className={`text-sm ${textMuted} max-w-sm mx-auto leading-relaxed`}>{FEATURES[0].desc}</p>
-                <p className={`text-xs ${textFaint} max-w-xs mx-auto`}>
-                  Pick a generator from the sidebar tabs — each one is tailored for a different use case.
-                </p>
-              </div>
-            )}
-
-            {step === 2 && (
-              <div className="space-y-4" style={{ animation: 'welcome-fade-up 0.5s ease-out both' }}>
-                <div className={`${iconColor} flex justify-center`}>{FEATURES[3].icon}</div>
-                <h3 className={`text-lg font-semibold ${text}`}>Customize Everything</h3>
-                <p className={`text-sm ${textMuted} max-w-sm mx-auto leading-relaxed`}>
-                  Adjust base shape, dimensions, edge treatment, borders, colors, and mounting options like magnets, screws, and keychains.
-                </p>
-                <p className={`text-xs ${textFaint} max-w-xs mx-auto`}>
-                  See changes in real-time with the interactive 3D preview. Orbit, pan, and zoom freely.
-                </p>
-              </div>
-            )}
-
-            {step === 3 && (
-              <div className="space-y-4" style={{ animation: 'welcome-fade-up 0.5s ease-out both' }}>
-                <div className={`${iconColor} flex justify-center`}>{FEATURES[2].icon}</div>
-                <h3 className={`text-lg font-semibold ${text}`}>Export &amp; Print</h3>
-                <p className={`text-sm ${textMuted} max-w-sm mx-auto leading-relaxed`}>
-                  Download a single STL or separate parts as a ZIP for multi-color printing. Everything runs client-side — no upload needed.
-                </p>
-                <p className={`text-xs ${textFaint} max-w-xs mx-auto`}>
-                  Works with any slicer: Bambu Studio, OrcaSlicer, PrusaSlicer, Cura, and more.
-                </p>
-              </div>
-            )}
-
-            <div className="flex items-center justify-center gap-3 pt-2">
-              {step > 1 && (
-                <button
-                  onClick={() => setStep(s => s - 1)}
-                  className={`text-sm py-2 px-5 rounded-lg transition-colors ${dark ? 'text-gray-300 hover:bg-white/10' : 'text-gray-600 hover:bg-black/5'}`}
-                >
-                  Back
-                </button>
-              )}
-              {step < 3 ? (
-                <button
-                  onClick={() => setStep(s => s + 1)}
-                  className="font-medium py-3 px-8 rounded-lg transition-all text-base text-white"
-                  style={{
-                    background: dark
-                      ? 'linear-gradient(135deg, #06b6d4 0%, #3b82f6 100%)'
-                      : 'linear-gradient(135deg, #3b82f6 0%, #6366f1 100%)',
-                    boxShadow: `0 0 24px ${neonSoft}`,
-                  }}
-                >
-                  Next
-                </button>
-              ) : (
-                <button
-                  onClick={onDismiss}
-                  className="font-medium py-3 px-8 rounded-lg transition-all text-base text-white"
-                  style={{
-                    background: dark
-                      ? 'linear-gradient(135deg, #06b6d4 0%, #3b82f6 100%)'
-                      : 'linear-gradient(135deg, #3b82f6 0%, #6366f1 100%)',
-                    boxShadow: `0 0 24px ${neonSoft}`,
-                  }}
-                >
-                  Get Started
-                </button>
-              )}
-            </div>
-            {step < 3 && (
+            <div
+              className="flex justify-center pt-2"
+              style={{
+                opacity: 0,
+                animation: `welcome-fade-up 0.6s ease-out ${dark ? '1.8s' : '2.8s'} both`,
+              }}
+            >
               <button
                 onClick={onDismiss}
-                className={`${skipColor} text-xs transition-colors`}
+                className="font-medium py-3 px-8 rounded-lg transition-all text-base text-white"
+                style={{
+                  background: dark
+                    ? 'linear-gradient(135deg, #06b6d4 0%, #3b82f6 100%)'
+                    : 'linear-gradient(135deg, #3b82f6 0%, #6366f1 100%)',
+                  boxShadow: `0 0 24px ${neonSoft}`,
+                }}
               >
-                Skip
+                Get Started
               </button>
-            )}
+            </div>
           </div>
         )}
       </div>

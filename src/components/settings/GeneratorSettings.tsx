@@ -41,10 +41,20 @@ const WIFI_ENCRYPTION_OPTIONS = [
 ];
 
 const BARCODE_FORMAT_OPTIONS = [
+  { value: 'EAN13', label: 'EAN-13' },
+  { value: 'EAN8', label: 'EAN-8' },
+  { value: 'UPCA', label: 'UPC-A' },
+  { value: 'CODE128', label: 'CODE 128' },
   { value: 'CODE39', label: 'CODE 39' },
-  { value: 'CODE128', label: 'CODE 128 (encoded as CODE 39)' },
-  { value: 'EAN13', label: 'EAN-13 (encoded as CODE 39)' },
 ];
+
+const BARCODE_DESCRIPTIONS: Record<string, string> = {
+  EAN13: 'Standard retail barcode (13 digits). Used worldwide on grocery items, books (ISBN), and consumer products.',
+  EAN8: 'Compact retail barcode (8 digits). Used on small packages where EAN-13 is too large.',
+  UPCA: 'North American retail barcode (12 digits). Standard for products sold in the US and Canada.',
+  CODE128: 'High-density alphanumeric barcode. Used in shipping labels, logistics, and supply chain management.',
+  CODE39: 'Alphanumeric barcode (A-Z, 0-9, symbols). Used in military, automotive, and industrial applications.',
+};
 
 function Label({ children }: { children: string }) {
   return <label className="text-sm text-gray-300">{children}</label>;
@@ -384,22 +394,33 @@ export function BarcodeSettings({
   config: BarcodeConfig;
   onChange: (u: Partial<BarcodeConfig>) => void;
 }) {
+  const placeholders: Record<string, string> = {
+    EAN13: '4006381333931',
+    EAN8: '96385074',
+    UPCA: '012345678905',
+    CODE128: 'Hello-123',
+    CODE39: 'HELLO123',
+  };
   return (
     <div className="space-y-3">
-      <div className="flex flex-col gap-1">
-        <Label>Barcode Data</Label>
-        <TextInput value={config.text} onChange={(v) => onChange({ text: v })} placeholder="HELLO123" />
-      </div>
       <Select
         label="Format"
         value={config.format}
         options={BARCODE_FORMAT_OPTIONS}
         onChange={(v) => onChange({ format: v as BarcodeFormat })}
       />
-      <Toggle label="Show Text Below" checked={config.showText} onChange={(v) => onChange({ showText: v })} />
       <p className="text-xs text-gray-500 italic">
-        CODE 39 supports 0-9, A-Z, and symbols (- . $ / + % space). Other characters are dropped.
+        {BARCODE_DESCRIPTIONS[config.format]}
       </p>
+      <div className="flex flex-col gap-1">
+        <Label>Barcode Data</Label>
+        <TextInput
+          value={config.text}
+          onChange={(v) => onChange({ text: v })}
+          placeholder={placeholders[config.format] ?? 'HELLO123'}
+        />
+      </div>
+      <Toggle label="Show Text Below" checked={config.showText} onChange={(v) => onChange({ showText: v })} />
     </div>
   );
 }
