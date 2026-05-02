@@ -110,6 +110,49 @@ function LinkedinIcon() {
   );
 }
 
+const PROCESS_STEPS = [
+  {
+    number: '01',
+    title: 'Pick a Generator',
+    desc: 'Choose from 9 types: QR codes, text labels, Spotify codes, WiFi cards, barcodes, image silhouettes, lithophanes, nameplates, or contact cards.',
+    icon: (
+      <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.8} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
+      </svg>
+    ),
+  },
+  {
+    number: '02',
+    title: 'Customize Your Design',
+    desc: 'Set the base shape, dimensions, edge treatment, border frame, content mode (embossed or engraved), colors, and mounting options.',
+    icon: (
+      <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.8} d="M12 6V4m0 2a2 2 0 100 4m0-4a2 2 0 110 4m-6 8a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4m6 6v10m6-2a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4" />
+      </svg>
+    ),
+  },
+  {
+    number: '03',
+    title: 'Preview in 3D',
+    desc: 'Orbit, pan, and zoom your model live. Switch view angles, toggle a printer build plate for scale, and verify dimensions before exporting.',
+    icon: (
+      <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.8} d="M14 10l-2 1m0 0l-2-1m2 1v2.5M20 7l-2 1m2-1l-2-1m2 1v2.5M14 4l-2-1-2 1M4 7l2-1M4 7l2 1M4 7v2.5M12 21l-2-1m2 1l2-1m-2 1v-2.5M6 18l-2-1v-2.5M18 18l2-1v-2.5" />
+      </svg>
+    ),
+  },
+  {
+    number: '04',
+    title: 'Export & Print',
+    desc: 'Download a single merged STL or a ZIP of separate parts for multi-color printing. Everything runs in your browser — nothing is uploaded.',
+    icon: (
+      <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.8} d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+      </svg>
+    ),
+  },
+];
+
 const FEATURES = [
   {
     icon: (
@@ -401,7 +444,7 @@ export function WelcomeScreen({ onDismiss }: WelcomeScreenProps) {
                 animation: 'welcome-fade-up 0.7s ease-out 2.2s both',
               }}
             >
-              See How It Works
+              How It Works
             </button>
             <div style={{ animation: 'welcome-fade-up 0.7s ease-out 2.4s both' }}>
               <button
@@ -415,13 +458,83 @@ export function WelcomeScreen({ onDismiss }: WelcomeScreenProps) {
         )}
 
         {step === 1 && (
-          <div className="text-center space-y-6">
-            <h2
-              className={`text-xl font-semibold ${text}`}
-              style={{ animation: 'welcome-fade-up 0.5s ease-out both' }}
+          <div className="text-center space-y-5 w-full max-w-lg">
+            <div style={{ animation: 'welcome-fade-up 0.5s ease-out both' }}>
+              <h2 className={`text-xl font-semibold ${text}`}>The Process</h2>
+              <p className={`text-sm ${textFaint} mt-1`}>Four steps from idea to print-ready file</p>
+            </div>
+
+            <div className="space-y-3 mt-4">
+              {PROCESS_STEPS.map((s, i) => {
+                const dur = dark ? '0.55s' : '0.85s';
+                const delay = dark ? `${0.15 + i * 0.22}s` : `${0.2 + i * 0.35}s`;
+                const cardBg = dark
+                  ? 'bg-gray-900/70 border-gray-700/60 backdrop-blur-sm'
+                  : 'bg-white/80 border-gray-200 shadow-sm backdrop-blur-sm';
+                return (
+                  <div
+                    key={i}
+                    className={`${cardBg} border rounded-lg p-4 flex items-start gap-4 text-left`}
+                    style={{
+                      opacity: 0,
+                      animation: `welcome-fade-up ${dur} ease-out ${delay} both`,
+                    }}
+                  >
+                    <div
+                      className="shrink-0 w-9 h-9 rounded-lg flex items-center justify-center"
+                      style={{
+                        background: dark
+                          ? 'linear-gradient(135deg, #06b6d4 0%, #3b82f6 100%)'
+                          : 'linear-gradient(135deg, #3b82f6 0%, #6366f1 100%)',
+                        boxShadow: `0 0 12px ${neonSoft}`,
+                      }}
+                    >
+                      <span className="text-white">{s.icon}</span>
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-2">
+                        <span className={`text-xs font-mono font-bold tracking-widest`} style={{ color: neon }}>{s.number}</span>
+                        <h3 className={`text-sm font-semibold ${dark ? 'text-white' : 'text-gray-900'}`}>{s.title}</h3>
+                      </div>
+                      <p className={`text-xs ${dark ? 'text-gray-400' : 'text-gray-600'} mt-1 leading-relaxed`}>{s.desc}</p>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+
+            <div
+              className="flex items-center justify-center gap-4 pt-2"
+              style={{
+                opacity: 0,
+                animation: `welcome-fade-up 0.6s ease-out ${dark ? '1.2s' : '1.8s'} both`,
+              }}
             >
-              How It Works
-            </h2>
+              <button
+                onClick={() => setStep(2)}
+                className="font-medium py-3 px-8 rounded-lg transition-all text-base text-white"
+                style={{
+                  background: dark
+                    ? 'linear-gradient(135deg, #06b6d4 0%, #3b82f6 100%)'
+                    : 'linear-gradient(135deg, #3b82f6 0%, #6366f1 100%)',
+                  boxShadow: `0 0 24px ${neonSoft}`,
+                }}
+              >
+                See All Features
+              </button>
+              <button onClick={onDismiss} className={`${skipColor} text-sm transition-colors`}>
+                Skip
+              </button>
+            </div>
+          </div>
+        )}
+
+        {step === 2 && (
+          <div className="text-center space-y-6">
+            <div style={{ animation: 'welcome-fade-up 0.5s ease-out both' }}>
+              <h2 className={`text-xl font-semibold ${text}`}>What You Can Make</h2>
+              <p className={`text-sm ${textFaint} mt-1`}>Nine generator types, fully customizable</p>
+            </div>
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mt-4">
               {FEATURES.map((f, i) => {
