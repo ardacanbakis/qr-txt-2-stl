@@ -4,10 +4,10 @@ import type { PixelGrid } from './image-generator';
 /**
  * Build a lithophane heightmap geometry.
  *
- * Pixel brightness maps to thickness: darker = thicker (opaque areas block more light).
- * The mesh is a single closed volume with:
- *  - a flat back plate at z = 0
- *  - a top surface whose z varies with the sampled pixel brightness
+ * Pixel brightness → thickness: darker = thicker (more opaque, blocks more backlight).
+ * Produces a closed volume: flat back at z=0, varying front surface, side walls.
+ * Vertex colors encode how lit each point appears when backlit (thin=white, thick=black)
+ * for use with the backlit preview material.
  */
 export function createLithophaneGeometry(
   pixels: PixelGrid,
@@ -38,42 +38,49 @@ export function createLithophaneGeometry(
 
   const thicknessRange = maxThickness - minThickness;
 
-  // Sample brightness -> height function.
-  const sample = (x: number, y: number) => {
+  const sample = (x: number, y: number): number => {
     const xi = Math.min(cols - 1, Math.max(0, x));
     const yi = Math.min(rows - 1, Math.max(0, y));
     const v = pixels.data[yi * cols + xi];
-    // Darker pixels (low v) should produce thicker material for lithophanes.
-    const inverted = invert ? v : 1 - v;
-    return minThickness + inverted * thicknessRange;
+    // Darker pixels → more material → brighter when backlit is OFF, darker when ON.
+    // invert=false (default): dark image pixel → thick → opaque
+    const mapped = invert ? v : 1 - v;
+    return minThickness + mapped * thicknessRange;
   };
 
   const positions: number[] = [];
+  const colors: number[] = [];
   const indices: number[] = [];
 
-  // Top vertices
+  // Top vertices (front face, varying Z)
   for (let y = 0; y < rows; y++) {
     for (let x = 0; x < cols; x++) {
       const px = offX + x * dx;
-      // Image Y is top-down; flip for world Y
-      const py = -offY - y * dy;
+      const py = -offY - y * dy; // Flip Y: image top → world top
       const pz = sample(x, y);
       positions.push(px, py, pz);
+      // Backlit color: thin areas = bright (white light passes through), thick = dark
+      const brightness = thicknessRange > 0 ? 1 - (pz - minThickness) / thicknessRange : 1;
+      colors.push(brightness, brightness * 0.95, brightness * 0.88); // warm white tint
     }
   }
 
-  // Bottom vertices at z = 0 (same count, same x/y)
+  // Bottom vertices (back face, flat at z=0)
   const bottomStart = cols * rows;
   for (let y = 0; y < rows; y++) {
     for (let x = 0; x < cols; x++) {
       const px = offX + x * dx;
       const py = -offY - y * dy;
       positions.push(px, py, 0);
+      // Back face is uniformly lit in backlit preview
+      colors.push(0.92, 0.88, 0.80);
     }
   }
 
-  // Top surface triangles
   const idxTop = (x: number, y: number) => y * cols + x;
+  const idxBot = (x: number, y: number) => bottomStart + y * cols + x;
+
+  // Top surface triangles
   for (let y = 0; y < rows - 1; y++) {
     for (let x = 0; x < cols - 1; x++) {
       const a = idxTop(x, y);
@@ -84,8 +91,7 @@ export function createLithophaneGeometry(
     }
   }
 
-  // Bottom surface triangles (reversed winding so normals point down)
-  const idxBot = (x: number, y: number) => bottomStart + y * cols + x;
+  // Bottom surface (reversed winding so normals face down/back)
   for (let y = 0; y < rows - 1; y++) {
     for (let x = 0; x < cols - 1; x++) {
       const a = idxBot(x, y);
@@ -96,30 +102,27 @@ export function createLithophaneGeometry(
     }
   }
 
-  // Side walls around the perimeter
+  // Side walls
   const sideQuad = (t0: number, t1: number, b0: number, b1: number) => {
     indices.push(t0, b0, b1, t0, b1, t1);
   };
 
-  // Top edge (y=0)
   for (let x = 0; x < cols - 1; x++) {
     sideQuad(idxTop(x, 0), idxTop(x + 1, 0), idxBot(x, 0), idxBot(x + 1, 0));
   }
-  // Bottom edge (y=rows-1)
   for (let x = 0; x < cols - 1; x++) {
     sideQuad(idxTop(x + 1, rows - 1), idxTop(x, rows - 1), idxBot(x + 1, rows - 1), idxBot(x, rows - 1));
   }
-  // Left edge (x=0)
   for (let y = 0; y < rows - 1; y++) {
     sideQuad(idxTop(0, y + 1), idxTop(0, y), idxBot(0, y + 1), idxBot(0, y));
   }
-  // Right edge (x=cols-1)
   for (let y = 0; y < rows - 1; y++) {
     sideQuad(idxTop(cols - 1, y), idxTop(cols - 1, y + 1), idxBot(cols - 1, y), idxBot(cols - 1, y + 1));
   }
 
   const geometry = new THREE.BufferGeometry();
   geometry.setAttribute('position', new THREE.Float32BufferAttribute(positions, 3));
+  geometry.setAttribute('color', new THREE.Float32BufferAttribute(colors, 3));
   geometry.setIndex(indices);
   geometry.computeVertexNormals();
   return geometry;

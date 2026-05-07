@@ -125,6 +125,13 @@ export interface LithophaneConfig {
   maxThickness: number;
   resolution: number;
   invert: boolean;
+  flipH: boolean;
+  flipV: boolean;
+  brightness: number;
+  contrast: number;
+  gamma: number;
+  sharpen: number;
+  backlitPreview: boolean;
 }
 
 export interface BarcodeConfig {
@@ -242,10 +249,17 @@ export const DEFAULT_CONFIG: ModelConfig = {
   lithophane: {
     dataUrl: '',
     fileName: '',
-    minThickness: 0.6,
-    maxThickness: 3.2,
-    resolution: 100,
+    minThickness: 0.4,
+    maxThickness: 3.0,
+    resolution: 150,
     invert: false,
+    flipH: false,
+    flipV: false,
+    brightness: 0,
+    contrast: 0,
+    gamma: 1.8,
+    sharpen: 0,
+    backlitPreview: false,
   },
   barcode: {
     text: 'HELLO123',

@@ -18,7 +18,7 @@ import {
 import { buildTextGeometry, isItalic } from '../../generators/text-generator';
 import { createSpotifyGeometryFromSvg, fetchSpotifySvg, parseSpotifyUri, type SpotifyGeometries } from '../../generators/spotify-generator';
 import { encodeBarcode, createBarcodeGeometry } from '../../generators/barcode-generator';
-import { loadImagePixels, type PixelGrid } from '../../generators/image-generator';
+import { loadImagePixels, type PixelGrid, type ImageProcessingOptions } from '../../generators/image-generator';
 import { createLithophaneGeometry } from '../../generators/lithophane-generator';
 import type { ModelConfig, FontStyle } from '../../types/model';
 
@@ -784,8 +784,14 @@ function BarcodeGeneratorGroup({ config }: { config: ModelConfig }) {
 
 // --- Shared image pixel loader (used by lithophane) ---
 
-function useImagePixels(dataUrl: string, resolution: number): PixelGrid | null {
+function useImagePixels(
+  dataUrl: string,
+  resolution: number,
+  opts?: Partial<ImageProcessingOptions>,
+): PixelGrid | null {
   const [pixels, setPixels] = useState<PixelGrid | null>(null);
+  // Serialize opts so useEffect dep comparison works on primitives
+  const optsKey = JSON.stringify(opts);
 
   useEffect(() => {
     if (!dataUrl) {
@@ -793,11 +799,12 @@ function useImagePixels(dataUrl: string, resolution: number): PixelGrid | null {
       return;
     }
     let active = true;
-    loadImagePixels(dataUrl, resolution)
+    loadImagePixels(dataUrl, resolution, opts)
       .then((p) => { if (active) setPixels(p); })
       .catch(() => { if (active) setPixels(null); });
     return () => { active = false; };
-  }, [dataUrl, resolution]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [dataUrl, resolution, optsKey]);
 
   return pixels;
 }
@@ -805,7 +812,17 @@ function useImagePixels(dataUrl: string, resolution: number): PixelGrid | null {
 // --- Lithophane Generator ---
 
 function LithophaneGeneratorGroup({ config }: { config: ModelConfig }) {
-  const pixels = useImagePixels(config.lithophane.dataUrl, config.lithophane.resolution);
+  const litho = config.lithophane;
+  const processingOpts: Partial<ImageProcessingOptions> = {
+    brightness: litho.brightness,
+    contrast: litho.contrast,
+    gamma: litho.gamma,
+    sharpen: litho.sharpen,
+    flipH: litho.flipH,
+    flipV: litho.flipV,
+  };
+
+  const pixels = useImagePixels(litho.dataUrl, litho.resolution, processingOpts);
 
   const geometry = useMemo(() => {
     if (!pixels) return new THREE.BufferGeometry();
@@ -813,20 +830,53 @@ function LithophaneGeneratorGroup({ config }: { config: ModelConfig }) {
       pixels,
       config.base.width,
       config.base.height,
-      config.lithophane.minThickness,
-      config.lithophane.maxThickness,
-      config.lithophane.invert,
+      litho.minThickness,
+      litho.maxThickness,
+      litho.invert,
     );
-  }, [pixels, config.base.width, config.base.height, config.lithophane.minThickness, config.lithophane.maxThickness, config.lithophane.invert]);
+  }, [
+    pixels,
+    config.base.width,
+    config.base.height,
+    litho.minThickness,
+    litho.maxThickness,
+    litho.invert,
+  ]);
   useEffect(() => () => { geometry.dispose(); }, [geometry]);
 
-  const z = config.base.thickness / 2;
+  // Center the lithophane at z=0: back face at z=-maxThickness/2, front at z=+maxThickness/2
+  const centerZ = -litho.maxThickness / 2;
 
   return (
-    <mesh position={[0, 0, z]} userData={{ part: 'content' }}>
-      <primitive object={geometry} attach="geometry" />
-      <meshStandardMaterial color={config.colors.content || config.colors.base} roughness={0.5} metalness={0.05} />
-    </mesh>
+    <>
+      {litho.backlitPreview && (
+        <pointLight
+          position={[0, 0, centerZ - litho.maxThickness - 15]}
+          intensity={3}
+          color="#fff5e0"
+          distance={120}
+          decay={2}
+        />
+      )}
+      <mesh position={[0, 0, centerZ]} userData={{ part: 'content' }}>
+        <primitive object={geometry} attach="geometry" />
+        {litho.backlitPreview ? (
+          <meshStandardMaterial
+            vertexColors
+            roughness={0.05}
+            metalness={0.0}
+            emissive="#ffe8cc"
+            emissiveIntensity={0.08}
+          />
+        ) : (
+          <meshStandardMaterial
+            color={config.colors.content || '#f5f5f0'}
+            roughness={0.4}
+            metalness={0.05}
+          />
+        )}
+      </mesh>
+    </>
   );
 }
 
@@ -951,10 +1001,13 @@ export const GeneratedModel = forwardRef<GeneratedModelRef, GeneratedModelProps>
       getScene: () => groupRef.current,
     }));
 
+    // Lithophane IS the plate — skip the base mesh to avoid double-layer
+    const isLitho = config.generator === 'lithophane';
+
     return (
       <group ref={groupRef}>
-        <BaseMesh config={config} />
-        <BorderFrameMesh config={config} />
+        {!isLitho && <BaseMesh config={config} />}
+        {!isLitho && <BorderFrameMesh config={config} />}
         <KeychainTabMesh config={config} />
         <MagnetHoles config={config} />
         <MountingIndicators config={config} />

@@ -352,11 +352,13 @@ export function LithophaneSettings({
   };
 
   return (
-    <div className="space-y-3">
-      <div className="flex flex-col gap-1">
-        <Label>Photo File</Label>
-        <label className="bg-gray-700 hover:bg-gray-600 text-gray-200 text-sm rounded-md px-3 py-2 border border-gray-600 cursor-pointer text-center">
-          {config.fileName || 'Choose photo (PNG, JPG)...'}
+    <div className="space-y-4">
+
+      {/* Image upload + preview */}
+      <div className="flex flex-col gap-2">
+        <Label>Photo</Label>
+        <label className="bg-gray-700 hover:bg-gray-600 text-gray-200 text-sm rounded-md px-3 py-2 border border-gray-600 cursor-pointer text-center transition-colors">
+          {config.fileName || 'Choose photo (PNG, JPG)…'}
           <input
             type="file"
             accept="image/*"
@@ -367,37 +369,114 @@ export function LithophaneSettings({
             }}
           />
         </label>
+        {config.dataUrl && (
+          <img
+            src={config.dataUrl}
+            alt="Preview"
+            className="w-full rounded-md border border-gray-600 object-cover"
+            style={{ maxHeight: 120, objectFit: 'cover' }}
+          />
+        )}
+        {!config.dataUrl && (
+          <p className="text-xs text-gray-500 italic">
+            Best results with high-contrast portraits or silhouettes. Print in white filament and backlight to reveal the image.
+          </p>
+        )}
       </div>
-      <Slider
-        label="Min Thickness"
-        value={config.minThickness}
-        min={0.2}
-        max={2}
-        step={0.1}
-        onChange={(v) => onChange({ minThickness: v })}
-      />
-      <Slider
-        label="Max Thickness"
-        value={config.maxThickness}
-        min={1}
-        max={6}
-        step={0.1}
-        onChange={(v) => onChange({ maxThickness: v })}
-      />
-      <Slider
-        label="Resolution"
-        value={config.resolution}
-        min={40}
-        max={400}
-        step={10}
-        unit="px"
-        onChange={(v) => onChange({ resolution: v })}
-      />
-      <Toggle label="Invert Brightness" checked={config.invert} onChange={(v) => onChange({ invert: v })} />
-      <p className="text-xs text-gray-500 italic">
-        Best with high-contrast black & white photos. Print in white filament and backlight to see the image.
-        Higher resolution produces more detail but increases generation time.
-      </p>
+
+      {/* Flip */}
+      <div className="flex gap-3">
+        <Toggle label="Flip H" checked={config.flipH} onChange={(v) => onChange({ flipH: v })} />
+        <Toggle label="Flip V" checked={config.flipV} onChange={(v) => onChange({ flipV: v })} />
+      </div>
+
+      {/* Image Adjustments */}
+      <div className="space-y-2">
+        <p className="text-xs text-gray-400 uppercase tracking-wider font-medium">Image Adjustments</p>
+        <Slider
+          label="Brightness"
+          value={config.brightness}
+          min={-100}
+          max={100}
+          step={5}
+          unit=""
+          onChange={(v) => onChange({ brightness: v })}
+        />
+        <Slider
+          label="Contrast"
+          value={config.contrast}
+          min={-100}
+          max={100}
+          step={5}
+          unit=""
+          onChange={(v) => onChange({ contrast: v })}
+        />
+        <Slider
+          label="Gamma"
+          value={config.gamma}
+          min={0.5}
+          max={3.0}
+          step={0.1}
+          unit=""
+          onChange={(v) => onChange({ gamma: v })}
+        />
+        <Slider
+          label="Sharpen"
+          value={config.sharpen}
+          min={0}
+          max={5}
+          step={0.5}
+          unit=""
+          onChange={(v) => onChange({ sharpen: v })}
+        />
+        <Toggle label="Invert" checked={config.invert} onChange={(v) => onChange({ invert: v })} />
+      </div>
+
+      {/* Print settings */}
+      <div className="space-y-2">
+        <p className="text-xs text-gray-400 uppercase tracking-wider font-medium">Print Settings</p>
+        <Slider
+          label="Min Thickness"
+          value={config.minThickness}
+          min={0.2}
+          max={2}
+          step={0.1}
+          onChange={(v) => onChange({ minThickness: v })}
+        />
+        <Slider
+          label="Max Thickness"
+          value={config.maxThickness}
+          min={1}
+          max={6}
+          step={0.1}
+          onChange={(v) => onChange({ maxThickness: v })}
+        />
+        {config.minThickness >= config.maxThickness && (
+          <InputWarning message="Min thickness must be less than max thickness" />
+        )}
+        <Slider
+          label="Resolution"
+          value={config.resolution}
+          min={50}
+          max={400}
+          step={10}
+          unit="px"
+          onChange={(v) => onChange({ resolution: v })}
+        />
+        <p className="text-xs text-gray-500">Higher resolution = more detail, larger file, slower generation.</p>
+      </div>
+
+      {/* Preview */}
+      <div className="space-y-2">
+        <p className="text-xs text-gray-400 uppercase tracking-wider font-medium">Preview</p>
+        <Toggle
+          label="Backlit Simulation"
+          checked={config.backlitPreview}
+          onChange={(v) => onChange({ backlitPreview: v })}
+        />
+        <p className="text-xs text-gray-500">Simulates how the print looks when lit from behind.</p>
+      </div>
+
     </div>
   );
 }
