@@ -1,6 +1,6 @@
 import { useMemo, useRef, useImperativeHandle, forwardRef, useEffect, useState } from 'react';
 import * as THREE from 'three';
-import { useFont } from '@react-three/drei';
+import { useFont, Html } from '@react-three/drei';
 import { generateQRMatrix, createQRGeometry, generateWifiString, generateVCardString } from '../../generators/qr-generator';
 import {
   createBasePlateGeometry,
@@ -453,35 +453,48 @@ function TextGeneratorGroup({ config }: { config: ModelConfig }) {
  * URL is invalid or the fetch fails. Vector path (SVGLoader) downstream
  * keeps the bars and logo crisp at any plate size.
  */
-function useSpotifySvg(url: string): string | null {
+function useSpotifySvg(url: string): { svgText: string | null; loading: boolean; error: boolean } {
   const [svgText, setSvgText] = useState<string | null>(null);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState(false);
 
   useEffect(() => {
     const uri = parseSpotifyUri(url);
     if (!uri) {
-      Promise.resolve().then(() => setSvgText(null));
+      setSvgText(null);
+      setLoading(false);
+      setError(false);
       return;
     }
 
-    let cancelled = false;
-    fetchSpotifySvg(uri)
+    const controller = new AbortController();
+    setSvgText(null);
+    setLoading(true);
+    setError(false);
+
+    fetchSpotifySvg(uri, controller.signal)
       .then((text) => {
-        if (!cancelled) setSvgText(text);
+        setSvgText(text);
+        setLoading(false);
       })
-      .catch(() => {
-        if (!cancelled) setSvgText(null);
+      .catch((err) => {
+        if ((err as Error).name === 'AbortError') return;
+        setSvgText(null);
+        setLoading(false);
+        setError(true);
       });
+
     return () => {
-      cancelled = true;
+      controller.abort();
     };
   }, [url]);
 
-  return svgText;
+  return { svgText, loading, error };
 }
 
 function SpotifyGeneratorGroup({ config }: { config: ModelConfig }) {
   const embossed = config.content.mode === 'embossed';
-  const svgText = useSpotifySvg(config.spotify.url);
+  const { svgText, loading, error } = useSpotifySvg(config.spotify.url);
   const { w: areaW, h: areaH } = contentArea(config.base);
 
   const geometries = useMemo((): SpotifyGeometries => {
@@ -513,6 +526,7 @@ function SpotifyGeneratorGroup({ config }: { config: ModelConfig }) {
   ]);
 
   const z = contentZ(config.base, config.content, embossed);
+  const hasUrl = !!parseSpotifyUri(config.spotify.url);
 
   return (
     <>
@@ -525,6 +539,20 @@ function SpotifyGeneratorGroup({ config }: { config: ModelConfig }) {
           <primitive object={geometries.logo} attach="geometry" />
           <meshStandardMaterial color={config.colors.logo} roughness={0.3} metalness={0.2} />
         </mesh>
+      )}
+      {hasUrl && loading && (
+        <Html center position={[0, 0, config.base.thickness / 2 + 1]}>
+          <div style={{ background: 'rgba(0,0,0,0.7)', color: '#22d3ee', padding: '6px 12px', borderRadius: 6, fontSize: 12, whiteSpace: 'nowrap', pointerEvents: 'none' }}>
+            Fetching Spotify code…
+          </div>
+        </Html>
+      )}
+      {hasUrl && error && (
+        <Html center position={[0, 0, config.base.thickness / 2 + 1]}>
+          <div style={{ background: 'rgba(0,0,0,0.7)', color: '#f87171', padding: '6px 12px', borderRadius: 6, fontSize: 12, whiteSpace: 'nowrap', pointerEvents: 'none' }}>
+            Could not fetch Spotify code — check the URL
+          </div>
+        </Html>
       )}
     </>
   );

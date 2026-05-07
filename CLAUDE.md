@@ -5,6 +5,16 @@
 
 ---
 
+## Safepoints
+
+| Tag | Commit | Date | Notes |
+|---|---|---|---|
+| `safepoint/pre-audit-fixes` | `d84e2ac` | 2026-05-07 | Stable baseline before systematic audit fixes. Welcome screen (3 steps), README rewritten, GitHub Pages base URL corrected. |
+
+> To restore: `git checkout safepoint/pre-audit-fixes`
+
+---
+
 ## Architecture Decisions
 
 | Decision | Choice | Notes |

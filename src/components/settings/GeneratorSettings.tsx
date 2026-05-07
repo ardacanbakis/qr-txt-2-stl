@@ -60,6 +60,17 @@ function Label({ children }: { children: string }) {
   return <label className="text-sm text-gray-300">{children}</label>;
 }
 
+function InputWarning({ message }: { message: string }) {
+  return (
+    <p className="flex items-center gap-1.5 text-xs text-amber-400">
+      <svg className="w-3.5 h-3.5 shrink-0" fill="currentColor" viewBox="0 0 20 20">
+        <path fillRule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
+      </svg>
+      {message}
+    </p>
+  );
+}
+
 function TextArea({
   value,
   onChange,
@@ -118,6 +129,7 @@ export function QRSettings({
   onBaseChange?: (u: Partial<BaseConfig>) => void;
 }) {
   const charCount = content.text.length;
+  const isEmpty = content.text.trim() === '';
   const isLong = charCount > 175;
 
   return (
@@ -125,19 +137,23 @@ export function QRSettings({
       <div className="flex flex-col gap-1">
         <Label>Content</Label>
         <TextArea value={content.text} onChange={(v) => onChange({ text: v })} placeholder="Text, URL, or any string..." />
-        <div className="flex items-center justify-between">
-          <span className={`text-xs ${isLong ? 'text-amber-400' : 'text-gray-500'}`}>
-            {charCount} characters
-          </span>
-          {isLong && (
-            <span className="text-xs text-amber-400 flex items-center gap-1">
-              <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 20 20">
-                <path fillRule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
-              </svg>
-              Long text may not scan reliably
+        {isEmpty ? (
+          <InputWarning message="Enter some content to generate a QR code" />
+        ) : (
+          <div className="flex items-center justify-between">
+            <span className={`text-xs ${isLong ? 'text-amber-400' : 'text-gray-500'}`}>
+              {charCount} characters
             </span>
-          )}
-        </div>
+            {isLong && (
+              <span className="text-xs text-amber-400 flex items-center gap-1">
+                <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 20 20">
+                  <path fillRule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
+                </svg>
+                Long text may not scan reliably
+              </span>
+            )}
+          </div>
+        )}
       </div>
       <Select
         label="Error Correction"
@@ -185,6 +201,7 @@ export function TextSettings({
       <div className="flex flex-col gap-1">
         <Label>Text</Label>
         <TextArea value={config.text} onChange={(v) => onChange({ text: v })} placeholder="Your text..." />
+        {config.text.trim() === '' && <InputWarning message="Enter some text to generate a label" />}
       </div>
       <Select
         label="Font Style"
@@ -419,6 +436,18 @@ export function BarcodeSettings({
           onChange={(v) => onChange({ text: v })}
           placeholder={placeholders[config.format] ?? 'HELLO123'}
         />
+        {config.text.trim() === '' && (
+          <InputWarning message={`Enter data for the barcode (e.g. ${placeholders[config.format] ?? 'HELLO123'})`} />
+        )}
+        {['EAN13'].includes(config.format) && config.text.trim() !== '' && config.text.replace(/\D/g, '').length !== 13 && (
+          <InputWarning message="EAN-13 requires exactly 13 digits" />
+        )}
+        {['EAN8'].includes(config.format) && config.text.trim() !== '' && config.text.replace(/\D/g, '').length !== 8 && (
+          <InputWarning message="EAN-8 requires exactly 8 digits" />
+        )}
+        {['UPCA'].includes(config.format) && config.text.trim() !== '' && config.text.replace(/\D/g, '').length !== 12 && (
+          <InputWarning message="UPC-A requires exactly 12 digits" />
+        )}
       </div>
       <Toggle label="Show Text Below" checked={config.showText} onChange={(v) => onChange({ showText: v })} />
     </div>

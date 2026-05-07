@@ -215,6 +215,7 @@ export function Sidebar(props: SidebarProps) {
             <SectionHeader title="Model" defaultOpen>
               <ModelSettings
                 content={config.content}
+                base={config.base}
                 onContentChange={onContentChange}
               />
               {/* Mounting inline in single mode only */}

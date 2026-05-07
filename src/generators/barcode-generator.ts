@@ -211,7 +211,8 @@ function mergeGeometries(geometries: THREE.BufferGeometry[]): THREE.BufferGeomet
   for (const g of geometries) {
     const pos = g.attributes.position;
     const norm = g.attributes.normal;
-    const idx = g.index!;
+    const idx = g.index;
+    if (!idx) { g.dispose(); continue; }
     for (let i = 0; i < pos.count * 3; i++) {
       positions.push(pos.array[i] as number);
       normals.push(norm.array[i] as number);

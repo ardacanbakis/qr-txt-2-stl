@@ -41,9 +41,9 @@ export function parseSpotifyUri(input: string): string | null {
  * Fetch the Spotify scannable SVG. `scannables.scdn.co` serves
  * `Access-Control-Allow-Origin: *` so the direct fetch works in-browser.
  */
-export async function fetchSpotifySvg(uri: string): Promise<string> {
+export async function fetchSpotifySvg(uri: string, signal?: AbortSignal): Promise<string> {
   const url = `${SCANNABLES_ENDPOINT}/000000/white/640/${encodeURIComponent(uri)}`;
-  const response = await fetch(url);
+  const response = await fetch(url, { signal });
   if (!response.ok) {
     throw new Error(`Spotify scannable fetch failed (${response.status})`);
   }

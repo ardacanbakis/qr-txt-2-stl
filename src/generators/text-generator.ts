@@ -89,7 +89,8 @@ export function fitTextToWidth(
   alignment: TextAlignment = 'center',
 ): THREE.BufferGeometry {
   geometry.computeBoundingBox();
-  const bb = geometry.boundingBox!;
+  if (!geometry.boundingBox) return geometry;
+  const bb = geometry.boundingBox;
   const width = bb.max.x - bb.min.x;
   if (width <= 0) return geometry;
 
@@ -99,7 +100,8 @@ export function fitTextToWidth(
   }
 
   geometry.computeBoundingBox();
-  const bb2 = geometry.boundingBox!;
+  if (!geometry.boundingBox) return geometry;
+  const bb2 = geometry.boundingBox;
   const w2 = bb2.max.x - bb2.min.x;
 
   if (alignment === 'left') {
