@@ -149,6 +149,7 @@ function BaseMesh({ config }: { config: ModelConfig }) {
     config.magnets.enabled, config.magnets.customDiameter, config.magnets.customDepth,
     config.magnets.position, config.magnets.count,
   ]);
+  useEffect(() => () => { geometry.dispose(); }, [geometry]);
 
   return (
     <mesh
@@ -175,6 +176,7 @@ function KeychainTabMesh({ config }: { config: ModelConfig }) {
       config.base.shape,
     );
   }, [config.base.keychainHole, config.base.width, config.base.height, config.base.keychainHoleDiameter, config.base.thickness, config.base.shape]);
+  useEffect(() => () => { geometry?.dispose(); }, [geometry]);
 
   if (!geometry) return null;
 
@@ -208,6 +210,7 @@ function BorderFrameMesh({ config }: { config: ModelConfig }) {
     config.base.borderHeight,
     config.base.cornerRadius,
   ]);
+  useEffect(() => () => { geometry?.dispose(); }, [geometry]);
 
   if (!geometry) return null;
 
@@ -238,6 +241,7 @@ function MagnetHoles({ config }: { config: ModelConfig }) {
       return geo;
     });
   }, [config.magnets, config.base.width, config.base.height, config.base.thickness, config.base.shape]);
+  useEffect(() => () => { geometries.forEach(g => g.dispose()); }, [geometries]);
 
   return (
     <>
@@ -262,11 +266,13 @@ function MountingIndicators({ config }: { config: ModelConfig }) {
       base.width, base.height, mounting.screwDiameter, base.thickness, mounting.screwCount, base.shape,
     );
   }, [mounting.screwHoles, mounting.screwDiameter, mounting.screwCount, base.width, base.height, base.thickness, base.shape]);
+  useEffect(() => () => { screwGeos.forEach(g => g.dispose()); }, [screwGeos]);
 
   const wallGeo = useMemo(() => {
     if (!mounting.wallMount) return null;
     return createWallMountGeometry(base.height, mounting.wallMountKeyholeWidth, base.thickness);
   }, [mounting.wallMount, mounting.wallMountKeyholeWidth, base.height, base.thickness]);
+  useEffect(() => () => { wallGeo?.dispose(); }, [wallGeo]);
 
   const fridgeGeo = useMemo(() => {
     if (!mounting.fridgeMagnet) return null;
@@ -277,6 +283,7 @@ function MountingIndicators({ config }: { config: ModelConfig }) {
       base.thickness,
     );
   }, [mounting.fridgeMagnet, mounting.fridgeMagnetWidth, mounting.fridgeMagnetHeight, mounting.fridgeMagnetDepth, base.thickness]);
+  useEffect(() => () => { fridgeGeo?.dispose(); }, [fridgeGeo]);
 
   const bz = baseZ(config.content);
 
@@ -350,6 +357,7 @@ function QRGeneratorGroup({ config }: { config: ModelConfig }) {
     textBandHeight,
     gap,
   ]);
+  useEffect(() => () => { geometry.dispose(); }, [geometry]);
 
   const qrYOffset = (textBandHeight + gap) / 2;
   const z = contentZ(config.base, config.content, embossed);
@@ -408,15 +416,18 @@ function TextContent({
       isItalic(fontStyle),
     );
     geo.computeBoundingBox();
-    const bb = geo.boundingBox!;
-    const w = bb.max.x - bb.min.x;
-    const h = bb.max.y - bb.min.y;
-    if (w > maxWidth || h > maxHeight) {
-      const s = Math.min(maxWidth / Math.max(w, 0.001), maxHeight / Math.max(h, 0.001));
-      geo.scale(s, s, 1);
+    if (geo.boundingBox) {
+      const bb = geo.boundingBox;
+      const w = bb.max.x - bb.min.x;
+      const h = bb.max.y - bb.min.y;
+      if (w > maxWidth || h > maxHeight) {
+        const s = Math.min(maxWidth / Math.max(w, 0.001), maxHeight / Math.max(h, 0.001));
+        geo.scale(s, s, 1);
+      }
     }
     return geo;
   }, [text, font, size, depth, maxWidth, maxHeight, fontStyle]);
+  useEffect(() => () => { geometry.dispose(); }, [geometry]);
 
   return (
     <mesh position={position} userData={{ part }}>
@@ -524,6 +535,7 @@ function SpotifyGeneratorGroup({ config }: { config: ModelConfig }) {
     config.spotify.showLogo,
     embossed,
   ]);
+  useEffect(() => () => { geometries.bars.dispose(); geometries.logo.dispose(); }, [geometries]);
 
   const z = contentZ(config.base, config.content, embossed);
   const hasUrl = !!parseSpotifyUri(config.spotify.url);
@@ -590,6 +602,7 @@ function WifiGeneratorGroup({ config }: { config: ModelConfig }) {
       return createQRGeometry(matrix, moduleCount, 20, 20, 0, depth, embossed);
     }
   }, [wifiString, areaW, areaH, depth, embossed, textBandHeight]);
+  useEffect(() => () => { qrGeometry.dispose(); }, [qrGeometry]);
 
   const qrYOffset = textBandHeight / 2;
   const z = contentZ(config.base, config.content, embossed);
@@ -649,6 +662,7 @@ function VCardGeneratorGroup({ config }: { config: ModelConfig }) {
       return createQRGeometry(matrix, moduleCount, 20, 20, 0, depth, embossed);
     }
   }, [vcardString, areaW, areaH, depth, embossed, textBandHeight]);
+  useEffect(() => () => { qrGeometry.dispose(); }, [qrGeometry]);
 
   const qrYOffset = textBandHeight / 2;
   const z = contentZ(config.base, config.content, embossed);
@@ -741,6 +755,7 @@ function BarcodeGeneratorGroup({ config }: { config: ModelConfig }) {
       embossed,
     );
   }, [config.barcode.text, config.barcode.format, areaW, areaH, depth, embossed, reservedBottom]);
+  useEffect(() => () => { barcodeGeometry.dispose(); }, [barcodeGeometry]);
 
   const z = contentZ(config.base, config.content, embossed);
 
@@ -774,16 +789,14 @@ function useImagePixels(dataUrl: string, resolution: number): PixelGrid | null {
 
   useEffect(() => {
     if (!dataUrl) {
-      Promise.resolve().then(() => setPixels(null));
+      setPixels(null);
       return;
     }
-    let cancelled = false;
-    loadImagePixels(dataUrl, resolution).then((p) => {
-      if (!cancelled) setPixels(p);
-    }).catch(() => {
-      if (!cancelled) setPixels(null);
-    });
-    return () => { cancelled = true; };
+    let active = true;
+    loadImagePixels(dataUrl, resolution)
+      .then((p) => { if (active) setPixels(p); })
+      .catch(() => { if (active) setPixels(null); });
+    return () => { active = false; };
   }, [dataUrl, resolution]);
 
   return pixels;
@@ -805,6 +818,7 @@ function LithophaneGeneratorGroup({ config }: { config: ModelConfig }) {
       config.lithophane.invert,
     );
   }, [pixels, config.base.width, config.base.height, config.lithophane.minThickness, config.lithophane.maxThickness, config.lithophane.invert]);
+  useEffect(() => () => { geometry.dispose(); }, [geometry]);
 
   const z = config.base.thickness / 2;
 
