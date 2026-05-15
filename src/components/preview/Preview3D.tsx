@@ -288,6 +288,25 @@ export const Preview3D = forwardRef<GeneratedModelRef, Preview3DProps>(({ config
     return () => document.removeEventListener('fullscreenchange', handler);
   }, []);
 
+  // Plain-key shortcuts (no modifier) — skip when focus is in an input/textarea
+  useEffect(() => {
+    const handler = (e: KeyboardEvent) => {
+      if (e.metaKey || e.ctrlKey || e.altKey) return;
+      const tag = (e.target as HTMLElement)?.tagName;
+      if (tag === 'INPUT' || tag === 'TEXTAREA' || (e.target as HTMLElement)?.isContentEditable) return;
+      switch (e.key) {
+        case 'g': setShowGrid((v) => !v); break;
+        case 'd': setDarkMode((v) => !v); break;
+        case 't': sendCommand('top'); break;
+        case 'f': sendCommand('fit'); break;
+        case '[': sendCommand('zoomOut'); break;
+        case ']': sendCommand('zoomIn'); break;
+      }
+    };
+    window.addEventListener('keydown', handler);
+    return () => window.removeEventListener('keydown', handler);
+  }, [sendCommand]);
+
   const bgColor = darkMode ? '#111827' : '#eef2f7';
 
   return (

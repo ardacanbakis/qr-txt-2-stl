@@ -15,7 +15,7 @@ import {
   MAGNET_TOLERANCE_DEPTH,
   type MagnetRecess,
 } from '../../generators/base-generator';
-import { buildTextGeometry, isItalic } from '../../generators/text-generator';
+import { buildTextGeometry, isItalic, fitTextToWidth } from '../../generators/text-generator';
 import { createSpotifyGeometryFromSvg, fetchSpotifySvg, parseSpotifyUri, type SpotifyGeometries } from '../../generators/spotify-generator';
 import { encodeBarcode, createBarcodeGeometry } from '../../generators/barcode-generator';
 import { loadImagePixels, type PixelGrid, type ImageProcessingOptions } from '../../generators/image-generator';
@@ -396,6 +396,7 @@ function TextContent({
   maxHeight,
   position,
   color,
+  alignment = 'center',
   part = 'text',
 }: {
   text: string;
@@ -406,6 +407,7 @@ function TextContent({
   maxHeight: number;
   position: [number, number, number];
   color: string;
+  alignment?: 'left' | 'center' | 'right';
   part?: string;
 }) {
   const font = useFont(fontUrl(fontStyle));
@@ -425,8 +427,8 @@ function TextContent({
         geo.scale(s, s, 1);
       }
     }
-    return geo;
-  }, [text, font, size, depth, maxWidth, maxHeight, fontStyle]);
+    return fitTextToWidth(geo, maxWidth, alignment);
+  }, [text, font, size, depth, maxWidth, maxHeight, fontStyle, alignment]);
   useEffect(() => () => { geometry.dispose(); }, [geometry]);
 
   return (
@@ -452,6 +454,7 @@ function TextGeneratorGroup({ config }: { config: ModelConfig }) {
       maxHeight={areaH}
       position={[0, 0, contentZ(config.base, config.content, embossed)]}
       color={config.colors.text}
+      alignment={config.text.alignment}
       part="text"
     />
   );

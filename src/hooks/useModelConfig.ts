@@ -1,4 +1,4 @@
-import { useState, useCallback, useRef } from 'react';
+import { useState, useCallback, useRef, useEffect } from 'react';
 import type {
   ModelConfig,
   BaseConfig,
@@ -21,11 +21,49 @@ import { DEFAULT_CONFIG } from '../types/model';
 import { PLATE_PRESETS } from '../generators/plate-presets';
 
 const HISTORY_LIMIT = 50;
+const AUTOSAVE_KEY = 'stlsmith.autosave';
+
+function loadAutosaved(): ModelConfig {
+  try {
+    const raw = localStorage.getItem(AUTOSAVE_KEY);
+    if (!raw) return DEFAULT_CONFIG;
+    const parsed = JSON.parse(raw);
+    // Shallow-merge per top-level key so newly added fields fall back to defaults
+    return {
+      ...DEFAULT_CONFIG,
+      ...parsed,
+      base: { ...DEFAULT_CONFIG.base, ...(parsed.base ?? {}) },
+      content: { ...DEFAULT_CONFIG.content, ...(parsed.content ?? {}) },
+      text: { ...DEFAULT_CONFIG.text, ...(parsed.text ?? {}) },
+      spotify: { ...DEFAULT_CONFIG.spotify, ...(parsed.spotify ?? {}) },
+      wifi: { ...DEFAULT_CONFIG.wifi, ...(parsed.wifi ?? {}) },
+      vcard: { ...DEFAULT_CONFIG.vcard, ...(parsed.vcard ?? {}) },
+      lithophane: { ...DEFAULT_CONFIG.lithophane, ...(parsed.lithophane ?? {}) },
+      barcode: { ...DEFAULT_CONFIG.barcode, ...(parsed.barcode ?? {}) },
+      nameplate: { ...DEFAULT_CONFIG.nameplate, ...(parsed.nameplate ?? {}) },
+      map: { ...DEFAULT_CONFIG.map, ...(parsed.map ?? {}) },
+      magnets: { ...DEFAULT_CONFIG.magnets, ...(parsed.magnets ?? {}) },
+      mounting: { ...DEFAULT_CONFIG.mounting, ...(parsed.mounting ?? {}) },
+      export: { ...DEFAULT_CONFIG.export, ...(parsed.export ?? {}) },
+      colors: { ...DEFAULT_CONFIG.colors, ...(parsed.colors ?? {}) },
+    };
+  } catch {
+    return DEFAULT_CONFIG;
+  }
+}
 
 export function useModelConfig() {
-  const [config, setConfigRaw] = useState<ModelConfig>(DEFAULT_CONFIG);
-  const historyRef = useRef<ModelConfig[]>([DEFAULT_CONFIG]);
+  const [config, setConfigRaw] = useState<ModelConfig>(() => loadAutosaved());
+  const historyRef = useRef<ModelConfig[]>([config]);
   const historyIndexRef = useRef<number>(0);
+
+  // Persist to localStorage with debounce
+  useEffect(() => {
+    const id = setTimeout(() => {
+      try { localStorage.setItem(AUTOSAVE_KEY, JSON.stringify(config)); } catch { /* quota */ }
+    }, 400);
+    return () => clearTimeout(id);
+  }, [config]);
   // Re-render trigger for canUndo/canRedo
   const [historyVer, setHistoryVer] = useState(0);
 
@@ -145,6 +183,7 @@ export function useModelConfig() {
     historyIndexRef.current = 0;
     setHistoryVer(0);
     setConfigRaw(DEFAULT_CONFIG);
+    try { localStorage.removeItem(AUTOSAVE_KEY); } catch { /* ignore */ }
   }, []);
 
   return {
