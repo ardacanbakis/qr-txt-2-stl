@@ -165,6 +165,7 @@ export interface MapConfig {
 export interface ExportConfig {
   separateParts: boolean;
   quality: ExportQuality;
+  asciiStl: boolean;
 }
 
 export interface ColorConfig {
@@ -306,6 +307,7 @@ export const DEFAULT_CONFIG: ModelConfig = {
   export: {
     separateParts: false,
     quality: 'high',
+    asciiStl: false,
   },
   colors: {
     base: '#e6e6ea',

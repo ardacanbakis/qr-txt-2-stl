@@ -8,6 +8,40 @@ import { ViewToolbar } from './ViewToolbar';
 import { BUILD_PLATES } from './buildPlates';
 import type { ModelConfig } from '../../types/model';
 
+// --- Volume estimation (signed tetrahedron method, mm³ → grams at PLA density) ---
+
+function computeSceneVolumeMm3(group: THREE.Group): number {
+  let total = 0;
+  const a = new THREE.Vector3(), b = new THREE.Vector3(), c = new THREE.Vector3();
+  group.traverse((obj) => {
+    if (!(obj as THREE.Mesh).isMesh) return;
+    const mesh = obj as THREE.Mesh;
+    if (mesh.userData.part === 'ignore') return;
+    const geo = mesh.geometry;
+    const pos = geo.getAttribute('position');
+    if (!pos) return;
+    const idx = geo.index;
+    const triCount = idx ? idx.count / 3 : pos.count / 3;
+    let vol = 0;
+    for (let i = 0; i < triCount; i++) {
+      const i0 = idx ? idx.getX(i * 3) : i * 3;
+      const i1 = idx ? idx.getX(i * 3 + 1) : i * 3 + 1;
+      const i2 = idx ? idx.getX(i * 3 + 2) : i * 3 + 2;
+      a.fromBufferAttribute(pos, i0);
+      b.fromBufferAttribute(pos, i1);
+      c.fromBufferAttribute(pos, i2);
+      a.applyMatrix4(mesh.matrixWorld);
+      b.applyMatrix4(mesh.matrixWorld);
+      c.applyMatrix4(mesh.matrixWorld);
+      vol += (a.x * (b.y * c.z - c.y * b.z) +
+              b.x * (c.y * a.z - a.y * c.z) +
+              c.x * (a.y * b.z - b.y * a.z)) / 6;
+    }
+    total += Math.abs(vol);
+  });
+  return total;
+}
+
 // --- Z-up spherical helpers ---
 
 function toZUpSpherical(v: THREE.Vector3) {
@@ -213,9 +247,22 @@ export const Preview3D = forwardRef<GeneratedModelRef, Preview3DProps>(({ config
   const [darkMode, setDarkMode] = useState(true);
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [cameraCommand, setCameraCommand] = useState<CameraCommand | null>(null);
+  const [volumeGrams, setVolumeGrams] = useState<number | null>(null);
   const commandKey = useRef(0);
   const containerRef = useRef<HTMLDivElement>(null);
   const modelGroupRef = useRef<THREE.Group>(null);
+
+  // Recompute volume whenever config changes (debounced via useEffect)
+  useEffect(() => {
+    const id = setTimeout(() => {
+      if (!modelGroupRef.current) return;
+      modelGroupRef.current.updateMatrixWorld(true);
+      const mm3 = computeSceneVolumeMm3(modelGroupRef.current);
+      const PLA_DENSITY = 0.00124; // g/mm³
+      setVolumeGrams(mm3 * PLA_DENSITY);
+    }, 300);
+    return () => clearTimeout(id);
+  }, [config]);
 
   const plates = BUILD_PLATES.map((p) =>
     p.custom ? { ...p, width: customPlateSize.width, height: customPlateSize.height } : p,
@@ -334,8 +381,13 @@ export const Preview3D = forwardRef<GeneratedModelRef, Preview3DProps>(({ config
         darkMode ? 'text-gray-400 bg-gray-900/75 backdrop-blur-sm' : 'text-gray-500 bg-white/80 border border-gray-200 backdrop-blur-sm'
       }`}>
         <div>{config.base.width} × {config.base.height} × {config.base.thickness}mm</div>
-        <div>Content: {config.content.contentHeight}mm ({config.content.mode})</div>
+        {config.generator !== 'lithophane' && (
+          <div>Content: {config.content.contentHeight}mm ({config.content.mode})</div>
+        )}
         <div className="opacity-60">{buildPlate.name} ({buildPlate.width}×{buildPlate.height})</div>
+        {volumeGrams !== null && (
+          <div className="opacity-80">~{volumeGrams.toFixed(1)} g PLA</div>
+        )}
       </div>
     </div>
   );

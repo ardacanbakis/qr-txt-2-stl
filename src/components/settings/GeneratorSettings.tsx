@@ -132,6 +132,20 @@ export function QRSettings({
   const isEmpty = content.text.trim() === '';
   const isLong = charCount > 175;
 
+  // Estimate QR module count & printable size
+  const qrModuleWarning = (() => {
+    if (!base || isEmpty) return null;
+    const effectiveWidth = base.borderEnabled
+      ? base.width - 2 * base.borderWidth
+      : base.width;
+    // QR version auto-selects: rough estimate is version ≈ charCount/25, minimum version 1 = 21 modules
+    const estimatedModules = Math.max(21, 21 + 4 * Math.ceil(charCount / 25));
+    const moduleSize = effectiveWidth / estimatedModules;
+    return moduleSize < 0.4
+      ? `Estimated QR module ~${moduleSize.toFixed(2)}mm — below 0.4mm printable minimum. Increase plate width or reduce content.`
+      : null;
+  })();
+
   return (
     <div className="space-y-3">
       <div className="flex flex-col gap-1">
@@ -154,6 +168,7 @@ export function QRSettings({
             )}
           </div>
         )}
+        {qrModuleWarning && <InputWarning message={qrModuleWarning} />}
       </div>
       <Select
         label="Error Correction"

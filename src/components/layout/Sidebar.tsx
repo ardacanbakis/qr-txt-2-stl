@@ -65,6 +65,7 @@ interface SidebarProps {
   isExporting?: boolean;
   buildPlateWidth?: number;
   buildPlateHeight?: number;
+  isMobile?: boolean;
 }
 
 const GENERATOR_LABELS: Record<GeneratorType, string> = {
@@ -105,7 +106,7 @@ export function Sidebar(props: SidebarProps) {
     onWifiChange, onVCardChange, onLithophaneChange,
     onBarcodeChange, onNameplateChange, onMapChange, onMagnetChange, onMountingChange,
     onExportChange, onColorsChange, onExport, onTemplateApply, onShowWelcome,
-    isExporting, buildPlateWidth, buildPlateHeight,
+    isExporting, buildPlateWidth, buildPlateHeight, isMobile,
   } = props;
 
   const [showTemplates, setShowTemplates] = useState(false);
@@ -118,7 +119,7 @@ export function Sidebar(props: SidebarProps) {
   const wideMap = isMap && mapPickerExpanded;
   const showModel = config.generator !== 'lithophane';
 
-  if (collapsed) {
+  if (collapsed && !isMobile) {
     return (
       <>
         <aside className="w-10 min-w-10 h-full bg-gray-800 border-r border-gray-700 flex flex-col items-center py-3 gap-3">
@@ -142,7 +143,7 @@ export function Sidebar(props: SidebarProps) {
         <TemplatesPanel onApply={onTemplateApply} onClose={() => setShowTemplates(false)} />
       )}
 
-      <aside className={`${wideMap ? 'w-[680px] min-w-[680px]' : isDual ? 'w-[300px] min-w-[300px]' : 'w-[380px] min-w-[380px]'} h-full bg-gray-800 border-r border-gray-700 flex flex-col overflow-hidden transition-all duration-300`}>
+      <aside className={`${isMobile ? 'w-full' : wideMap ? 'w-[680px] min-w-[680px]' : isDual ? 'w-[300px] min-w-[300px]' : 'w-[380px] min-w-[380px]'} h-full bg-gray-800 border-r border-gray-700 flex flex-col overflow-hidden transition-all duration-300`}>
         {/* Header */}
         <div className="px-4 py-2 border-b border-gray-700 flex items-center justify-between gap-2">
           <button
@@ -170,24 +171,28 @@ export function Sidebar(props: SidebarProps) {
                 <rect x="9" y="9" width="6" height="6" rx="1" />
               </svg>
             </button>
-            {/* Layout toggle */}
-            <button
-              onClick={() => onLayoutChange(isDual ? 'single' : 'dual')}
-              title={isDual ? 'Switch to single sidebar' : 'Switch to dual sidebar'}
-              className="w-7 h-7 flex items-center justify-center rounded text-gray-400 hover:text-white hover:bg-gray-700 transition-colors"
-            >
-              {isDual ? <IconSingle /> : <IconDual />}
-            </button>
-            {/* Collapse */}
-            <button
-              onClick={() => setCollapsed(true)}
-              title="Collapse sidebar"
-              className="w-7 h-7 flex items-center justify-center rounded text-gray-400 hover:text-white hover:bg-gray-700 transition-colors"
-            >
-              <svg viewBox="0 0 16 16" className="w-3.5 h-3.5" fill="none" stroke="currentColor" strokeWidth={1.8}>
-                <path strokeLinecap="round" strokeLinejoin="round" d="M10 3L5 8l5 5" />
-              </svg>
-            </button>
+            {/* Layout toggle - desktop only */}
+            {!isMobile && (
+              <button
+                onClick={() => onLayoutChange(isDual ? 'single' : 'dual')}
+                title={isDual ? 'Switch to single sidebar' : 'Switch to dual sidebar'}
+                className="w-7 h-7 flex items-center justify-center rounded text-gray-400 hover:text-white hover:bg-gray-700 transition-colors"
+              >
+                {isDual ? <IconSingle /> : <IconDual />}
+              </button>
+            )}
+            {/* Collapse - desktop only */}
+            {!isMobile && (
+              <button
+                onClick={() => setCollapsed(true)}
+                title="Collapse sidebar"
+                className="w-7 h-7 flex items-center justify-center rounded text-gray-400 hover:text-white hover:bg-gray-700 transition-colors"
+              >
+                <svg viewBox="0 0 16 16" className="w-3.5 h-3.5" fill="none" stroke="currentColor" strokeWidth={1.8}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M10 3L5 8l5 5" />
+                </svg>
+              </button>
+            )}
           </div>
         </div>
 
@@ -268,6 +273,11 @@ export function Sidebar(props: SidebarProps) {
             label="Separate Parts (multi-color)"
             checked={config.export.separateParts}
             onChange={v => onExportChange({ separateParts: v })}
+          />
+          <Toggle
+            label="ASCII STL (larger, human-readable)"
+            checked={config.export.asciiStl ?? false}
+            onChange={v => onExportChange({ asciiStl: v })}
           />
           <button
             onClick={onExport}

@@ -4,10 +4,64 @@ import { STLExporter } from 'three/addons/exporters/STLExporter.js';
 /** Tag applied to mesh.userData.part for separate-parts export. */
 export type PartTag = 'base' | 'border' | 'content' | 'text' | 'secondary' | 'logo' | 'ignore';
 
-export function exportSTL(scene: THREE.Object3D, filename: string = 'model.stl'): void {
+export interface STLValidationResult {
+  valid: boolean;
+  warnings: string[];
+}
+
+/** Scan a scene for NaN vertices or degenerate zero-area triangles. */
+export function validateScene(scene: THREE.Object3D): STLValidationResult {
+  const warnings: string[] = [];
+  let nanCount = 0;
+  let degenerateCount = 0;
+
+  const a = new THREE.Vector3(), b = new THREE.Vector3(), c = new THREE.Vector3();
+  const ab = new THREE.Vector3(), ac = new THREE.Vector3();
+
+  scene.traverse((obj) => {
+    if (!(obj as THREE.Mesh).isMesh) return;
+    const mesh = obj as THREE.Mesh;
+    if ((mesh.userData.part as PartTag) === 'ignore') return;
+    const geo = mesh.geometry;
+    const pos = geo.getAttribute('position');
+    if (!pos) return;
+
+    const index = geo.index;
+    const triCount = index ? index.count / 3 : pos.count / 3;
+
+    for (let i = 0; i < triCount; i++) {
+      const i0 = index ? index.getX(i * 3) : i * 3;
+      const i1 = index ? index.getX(i * 3 + 1) : i * 3 + 1;
+      const i2 = index ? index.getX(i * 3 + 2) : i * 3 + 2;
+
+      a.fromBufferAttribute(pos, i0);
+      b.fromBufferAttribute(pos, i1);
+      c.fromBufferAttribute(pos, i2);
+
+      if (isNaN(a.x) || isNaN(a.y) || isNaN(a.z) ||
+          isNaN(b.x) || isNaN(b.y) || isNaN(b.z) ||
+          isNaN(c.x) || isNaN(c.y) || isNaN(c.z)) {
+        nanCount++;
+        continue;
+      }
+
+      ab.subVectors(b, a);
+      ac.subVectors(c, a);
+      const crossLen = ab.cross(ac).length();
+      if (crossLen < 1e-10) degenerateCount++;
+    }
+  });
+
+  if (nanCount > 0) warnings.push(`${nanCount} triangle(s) have NaN vertices and will appear corrupt.`);
+  if (degenerateCount > 0) warnings.push(`${degenerateCount} degenerate zero-area triangle(s) detected.`);
+
+  return { valid: warnings.length === 0, warnings };
+}
+
+export function exportSTL(scene: THREE.Object3D, filename: string = 'model.stl', binary = true): void {
   const exporter = new STLExporter();
-  const stlString = exporter.parse(scene, { binary: true });
-  downloadBlob(toBlob(stlString), filename);
+  const result = exporter.parse(scene, { binary });
+  downloadBlob(toBlob(result), filename);
 }
 
 /**
@@ -16,7 +70,7 @@ export function exportSTL(scene: THREE.Object3D, filename: string = 'model.stl')
  * Meshes with part === 'ignore' are skipped. Untagged meshes go into a
  * "combined" fallback file so nothing is silently lost.
  */
-export function exportSeparateParts(scene: THREE.Object3D, baseName: string): void {
+export function exportSeparateParts(scene: THREE.Object3D, baseName: string, binary = true): void {
   const exporter = new STLExporter();
   const groups = new Map<string, THREE.Mesh[]>();
   const untagged: THREE.Mesh[] = [];
@@ -35,8 +89,7 @@ export function exportSeparateParts(scene: THREE.Object3D, baseName: string): vo
   });
 
   if (groups.size === 0 && untagged.length > 0) {
-    // Nothing tagged; fall back to single export.
-    exportSTL(scene, `${baseName}.stl`);
+    exportSTL(scene, `${baseName}.stl`, binary);
     return;
   }
 
@@ -52,14 +105,14 @@ export function exportSeparateParts(scene: THREE.Object3D, baseName: string): vo
       clone.matrix.decompose(clone.position, clone.quaternion, clone.scale);
       partScene.add(clone);
     }
-    const result = exporter.parse(partScene, { binary: true });
+    const result = exporter.parse(partScene, { binary });
     zipFiles.push({ name: `${baseName}-${part}.stl`, data: resultToUint8Array(result) });
   }
 
   if (untagged.length > 0) {
     const partScene = new THREE.Scene();
     for (const m of untagged) partScene.add(m.clone());
-    const result = exporter.parse(partScene, { binary: true });
+    const result = exporter.parse(partScene, { binary });
     zipFiles.push({ name: `${baseName}-other.stl`, data: resultToUint8Array(result) });
   }
 
