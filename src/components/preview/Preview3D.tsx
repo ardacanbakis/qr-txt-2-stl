@@ -42,6 +42,16 @@ function computeSceneVolumeMm3(group: THREE.Group): number {
   return total;
 }
 
+// --- Print time estimate (very rough: ~2 min/g PLA at standard 50mm/s, 0.2mm layers) ---
+
+function formatPrintTime(grams: number): string {
+  const minutes = Math.round(grams * 2.2);
+  if (minutes < 60) return `${minutes} min`;
+  const h = Math.floor(minutes / 60);
+  const m = minutes % 60;
+  return m > 0 ? `${h}h ${m}m` : `${h}h`;
+}
+
 // --- Z-up spherical helpers ---
 
 function toZUpSpherical(v: THREE.Vector3) {
@@ -405,7 +415,10 @@ export const Preview3D = forwardRef<GeneratedModelRef, Preview3DProps>(({ config
         )}
         <div className="opacity-60">{buildPlate.name} ({buildPlate.width}×{buildPlate.height})</div>
         {volumeGrams !== null && (
-          <div className="opacity-80">~{volumeGrams.toFixed(1)} g PLA</div>
+          <>
+            <div className="opacity-80">~{volumeGrams.toFixed(1)} g PLA</div>
+            <div className="opacity-70">~{formatPrintTime(volumeGrams)} est. print</div>
+          </>
         )}
       </div>
     </div>

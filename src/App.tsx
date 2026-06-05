@@ -5,6 +5,7 @@ import { Preview3D } from './components/preview/Preview3D';
 import { FirebasePanel } from './components/layout/FirebasePanel';
 import { WelcomeScreen, useWelcomeScreen } from './components/layout/WelcomeScreen';
 import { useModelConfig } from './hooks/useModelConfig';
+import { useShareableUrl } from './hooks/useShareableUrl';
 import { exportSTL, exportSeparateParts, validateScene } from './generators/stl-exporter';
 import { BUILD_PLATES } from './components/preview/buildPlates';
 import type { GeneratedModelRef } from './components/preview/GeneratedModel';
@@ -68,7 +69,16 @@ function App() {
   const [isExporting, setIsExporting] = useState(false);
   const [buildPlateIndex, setBuildPlateIndex] = useState(0);
   const [customPlateSize, setCustomPlateSize] = useState({ width: 200, height: 200 });
+  const [shareToast, setShareToast] = useState<'idle' | 'copied' | 'error'>('idle');
   const { showWelcome, dismiss: dismissWelcome, show: showWelcomeScreen } = useWelcomeScreen();
+
+  const { copyShareUrl } = useShareableUrl(config, applyTemplate);
+
+  const handleShare = useCallback(async () => {
+    const ok = await copyShareUrl();
+    setShareToast(ok ? 'copied' : 'error');
+    setTimeout(() => setShareToast('idle'), 2500);
+  }, [copyShareUrl]);
 
   const currentPlate = BUILD_PLATES[buildPlateIndex];
   const buildPlateWidth = currentPlate.custom ? customPlateSize.width : currentPlate.width;
@@ -160,7 +170,8 @@ function App() {
               customPlateSize={customPlateSize}
               onCustomPlateSizeChange={setCustomPlateSize}
             />
-            <div className="absolute top-2 right-2 z-10">
+            <div className="absolute top-2 right-2 z-10 flex items-center gap-2">
+              <ShareButton onShare={handleShare} toast={shareToast} />
               <FirebasePanel config={config} onLoad={applyTemplate} />
             </div>
           </main>
@@ -203,7 +214,8 @@ function App() {
               customPlateSize={customPlateSize}
               onCustomPlateSizeChange={setCustomPlateSize}
             />
-            <div className="absolute top-2 right-2 z-10">
+            <div className="absolute top-2 right-2 z-10 flex items-center gap-2">
+              <ShareButton onShare={handleShare} toast={shareToast} />
               <FirebasePanel config={config} onLoad={applyTemplate} />
             </div>
           </main>
@@ -222,6 +234,30 @@ function App() {
             />
           )}
         </>
+      )}
+    </div>
+  );
+}
+
+function ShareButton({ onShare, toast }: { onShare: () => void; toast: 'idle' | 'copied' | 'error' }) {
+  return (
+    <div className="relative">
+      <button
+        onClick={onShare}
+        title="Copy shareable link"
+        className="flex items-center gap-1.5 px-3 py-1.5 bg-gray-800/90 hover:bg-gray-700 border border-gray-600 hover:border-gray-500 rounded-lg text-xs text-gray-300 hover:text-white transition-all backdrop-blur"
+      >
+        <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.368 2.684 3 3 0 00-5.368-2.684z" />
+        </svg>
+        Share
+      </button>
+      {toast !== 'idle' && (
+        <div className={`absolute top-full mt-1.5 right-0 px-2.5 py-1.5 rounded-lg text-xs font-medium whitespace-nowrap shadow-lg ${
+          toast === 'copied' ? 'bg-green-600 text-white' : 'bg-red-600 text-white'
+        }`}>
+          {toast === 'copied' ? 'Link copied!' : 'Copy failed'}
+        </div>
       )}
     </div>
   );

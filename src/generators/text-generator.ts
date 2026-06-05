@@ -11,19 +11,13 @@ export interface BuildTextGeometryOptions {
   letterSpacing?: number;
 }
 
-/**
- * Build a TextGeometry for the given text and center it on the origin.
- * Also applies a simple italic shear when requested.
- */
-export function buildTextGeometry(
+/** Build a single line of text geometry, centered at origin. */
+function buildSingleLineGeometry(
   opts: BuildTextGeometryOptions,
-  italic = false,
+  italic: boolean,
 ): THREE.BufferGeometry {
   const { text, font, size, depth, letterSpacing = 0 } = opts;
-
   const safeText = text.length > 0 ? text : ' ';
-
-  // Build per-character geometries so we can apply letter spacing.
   const partGeometries: THREE.BufferGeometry[] = [];
   let cursorX = 0;
 
@@ -32,13 +26,9 @@ export function buildTextGeometry(
       cursorX += size * 0.4 + letterSpacing;
       continue;
     }
-    if (ch === '\n') {
-      continue;
-    }
     const geo = new TextGeometry(ch, {
       font,
       size,
-      // three-stdlib TextGeometry uses `height` for extrusion depth
       height: depth,
       curveSegments: 6,
       bevelEnabled: false,
@@ -46,15 +36,12 @@ export function buildTextGeometry(
     geo.computeBoundingBox();
     const bb = geo.boundingBox!;
     const width = bb.max.x - bb.min.x;
-    // Position character at cursor, offset by -minX so left edge aligns.
     geo.translate(cursorX - bb.min.x, 0, 0);
     cursorX += width + letterSpacing + size * 0.08;
     partGeometries.push(geo);
   }
 
-  if (partGeometries.length === 0) {
-    return new THREE.BufferGeometry();
-  }
+  if (partGeometries.length === 0) return new THREE.BufferGeometry();
 
   const merged = mergeBufferGeometries(partGeometries);
   merged.computeBoundingBox();
@@ -64,19 +51,50 @@ export function buildTextGeometry(
   merged.translate(-cx, -cy, 0);
 
   if (italic) {
-    // Apply shear along X for italic look (Three.js TextGeometry has no italic variant).
     const shear = 0.18;
-    const m = new THREE.Matrix4().set(
-      1, shear, 0, 0,
-      0, 1,     0, 0,
-      0, 0,     1, 0,
-      0, 0,     0, 1,
-    );
+    const m = new THREE.Matrix4().set(1, shear, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1);
     merged.applyMatrix4(m);
   }
 
   for (const g of partGeometries) g.dispose();
+  return merged;
+}
 
+/**
+ * Build a TextGeometry for the given text and center it on the origin.
+ * Supports multi-line text via `\n` when lineSpacing > 0.
+ */
+export function buildTextGeometry(
+  opts: BuildTextGeometryOptions,
+  italic = false,
+  lineSpacing = 0,
+): THREE.BufferGeometry {
+  const lines = opts.text.split('\n');
+
+  if (lines.length <= 1 || lineSpacing === 0) {
+    // Single-line path (original behavior, skips \n)
+    const singleOpts = { ...opts, text: opts.text.replace(/\n/g, ' ') };
+    return buildSingleLineGeometry(singleOpts, italic);
+  }
+
+  // Multi-line: build each line, then stack them vertically
+  const lineHeight = opts.size * lineSpacing;
+  const totalHeight = lineHeight * (lines.length - 1);
+  const lineGeos: THREE.BufferGeometry[] = [];
+
+  lines.forEach((line, i) => {
+    const lineOpts = { ...opts, text: line.trim() || ' ' };
+    const geo = buildSingleLineGeometry(lineOpts, italic);
+    // Stack: top line at +totalHeight/2, bottom at -totalHeight/2
+    const y = totalHeight / 2 - i * lineHeight;
+    geo.translate(0, y, 0);
+    lineGeos.push(geo);
+  });
+
+  if (lineGeos.length === 0) return new THREE.BufferGeometry();
+
+  const merged = mergeBufferGeometries(lineGeos);
+  for (const g of lineGeos) g.dispose();
   return merged;
 }
 

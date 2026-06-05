@@ -398,6 +398,7 @@ function TextContent({
   color,
   alignment = 'center',
   part = 'text',
+  lineSpacing = 0,
 }: {
   text: string;
   fontStyle: FontStyle;
@@ -409,6 +410,7 @@ function TextContent({
   color: string;
   alignment?: 'left' | 'center' | 'right';
   part?: string;
+  lineSpacing?: number;
 }) {
   const font = useFont(fontUrl(fontStyle));
 
@@ -416,6 +418,7 @@ function TextContent({
     const geo = buildTextGeometry(
       { text: text || ' ', font, size, depth },
       isItalic(fontStyle),
+      lineSpacing,
     );
     geo.computeBoundingBox();
     if (geo.boundingBox) {
@@ -428,7 +431,7 @@ function TextContent({
       }
     }
     return fitTextToWidth(geo, maxWidth, alignment);
-  }, [text, font, size, depth, maxWidth, maxHeight, fontStyle, alignment]);
+  }, [text, font, size, depth, maxWidth, maxHeight, fontStyle, alignment, lineSpacing]);
   useEffect(() => () => { geometry.dispose(); }, [geometry]);
 
   return (
@@ -456,6 +459,7 @@ function TextGeneratorGroup({ config }: { config: ModelConfig }) {
       color={config.colors.text}
       alignment={config.text.alignment}
       part="text"
+      lineSpacing={config.text.multiline ? config.text.lineSpacing : 0}
     />
   );
 }

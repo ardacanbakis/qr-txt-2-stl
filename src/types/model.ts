@@ -85,6 +85,8 @@ export interface TextConfig {
   size: number;
   letterSpacing: number;
   alignment: TextAlignment;
+  multiline: boolean;
+  lineSpacing: number;
 }
 
 export interface SpotifyConfig {
@@ -226,6 +228,8 @@ export const DEFAULT_CONFIG: ModelConfig = {
     size: 10,
     letterSpacing: 0,
     alignment: 'center',
+    multiline: false,
+    lineSpacing: 1.4,
   },
   spotify: {
     url: 'https://open.spotify.com/track/4cOdK2wGLETKBW3PvgPWqT',

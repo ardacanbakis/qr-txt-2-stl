@@ -219,13 +219,43 @@ export function TextSettings({
   config: TextConfig;
   onChange: (u: Partial<TextConfig>) => void;
 }) {
+  const lineCount = config.text.split('\n').length;
   return (
     <div className="space-y-3">
+      <Toggle
+        label="Multi-line Text"
+        checked={config.multiline}
+        onChange={(v) => onChange({ multiline: v })}
+      />
       <div className="flex flex-col gap-1">
         <Label>Text</Label>
-        <TextArea value={config.text} onChange={(v) => onChange({ text: v })} placeholder="Your text..." />
+        {config.multiline ? (
+          <>
+            <TextArea
+              value={config.text}
+              onChange={(v) => onChange({ text: v })}
+              rows={4}
+              placeholder={'Line 1\nLine 2\nLine 3'}
+            />
+            <span className="text-xs text-gray-500">{lineCount} line{lineCount !== 1 ? 's' : ''} — press Enter for a new line</span>
+          </>
+        ) : (
+          <>
+            <TextArea value={config.text} onChange={(v) => onChange({ text: v.replace(/\n/g, ' ') })} placeholder="Your text..." />
+          </>
+        )}
         {config.text.trim() === '' && <InputWarning message="Enter some text to generate a label" />}
       </div>
+      {config.multiline && lineCount > 1 && (
+        <Slider
+          label="Line Spacing"
+          value={config.lineSpacing}
+          min={1.0}
+          max={2.5}
+          step={0.05}
+          onChange={(v) => onChange({ lineSpacing: v })}
+        />
+      )}
       <Select
         label="Font Style"
         value={config.fontStyle}
